@@ -8,11 +8,12 @@
 - 游戏图集由内置 imagegen 工具依据参考生成，并整体修正头部与视线。没有将普通绿色青蛙或 Pepe 当作奶蛙。
 - 本轮补充八个姿态：深蹲、蹲拳、扫腿、升龙、飞踢、抱摔准备、旋风腿与疾跑。原图保存于 `assets/source/milkfrog-advanced.png`，WebP 保存于 `assets/milkfrog-advanced.webp`，沿用基础角色作为生成参考。
 - 图集读取改为先扩大取样范围，再提取主要 alpha 连通轮廓；由代码恢复越界拳脚并隔离大笑旁的倒地脚，不重新绘制角色五官。
-- 奶蛙 / 奶绿 / 奶红 / 奶紫共享协调的基础身体，变体颜色在浏览器 Canvas 中选择性重映射，眼睛与肚皮保留原色。
+- 奶蛙 / 奶绿 / 奶红 / 奶紫 / 奶粉 / 奶蓝共享协调的基础身体，变体颜色在浏览器 Canvas 中选择性重映射，眼睛与肚皮保留原色。
 
 ## 场景与光效
 
 - 老街奶吧场景由内置 imagegen 工具生成；完整提示词在 `art-direction.md`。
+- 扩展街区与雨天版本同样由内置 imagegen 制作：`assets/source/milk-rooftops.png`、`assets/source/milk-rain.png`；运行资源为同名 WebP。雨滴与涟漪实时绘制，未烘焙到背景中。
 - 所有光效、HUD 和图标在项目中绘制，不加载第三方图标库。
 - 原始 PNG 保存于 `assets/source/`，运行使用编码为 WebP 的版本。WebP 编码仅压缩格式，没有程序化重画角色。
 

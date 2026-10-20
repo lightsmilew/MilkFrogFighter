@@ -7,7 +7,7 @@ await mkdir(output,{recursive:true});
 for(const name of ['index.html','style.css','.nojekyll'])await cp(resolve(root,name),resolve(output,name));
 await cp(resolve(root,'src'),resolve(output,'src'),{recursive:true});
 await mkdir(resolve(output,'assets'),{recursive:true});
-for(const name of ['favicon.svg','milk-street.webp','milkfrog-sprites.webp','milkfrog-advanced.webp']){
+for(const name of ['favicon.svg','milk-street.webp','milkfrog-sprites.webp','milkfrog-advanced.webp','milk-rooftops.webp','milk-rain.webp']){
   await stat(resolve(root,'assets',name));
   await cp(resolve(root,'assets',name),resolve(output,'assets',name));
 }

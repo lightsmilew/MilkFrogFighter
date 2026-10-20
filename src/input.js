@@ -72,7 +72,7 @@ export class Input {
       stick.style.setProperty('--stick-x',`${x}px`);stick.style.setProperty('--stick-y',`${y}px`);
       const held=new Set(),nx=x/radius,ny=y/radius;
       // Radial dead zone avoids drift; horizontal + vertical thresholds retain
-      // diagonals. Jump is an edge, so holding up never causes auto bunny hops.
+      // diagonals. Held-up repeats on landing; a fresh up edge is an air jump.
       if(distance>radius*.22){
         if(nx<-.28)held.add('left');if(nx>.28)held.add('right');
         if(ny<-.52)held.add('jump');if(ny>.48)held.add('down');
@@ -123,6 +123,7 @@ export class Input {
       if (button(6)) down.add('uppercut');
       if (button(7)) down.add('grab');
       if (button(8)) down.add('taunt');
+      if (button(10)) down.add('blink');
       down.forEach(action => {
         inputs[index].held.add(action);
         if (!this.previousPads[index].has(action)) inputs[index].pressed.add(action);

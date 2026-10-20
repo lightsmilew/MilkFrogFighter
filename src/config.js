@@ -1,15 +1,38 @@
-export const WORLD = Object.freeze({ width: 1280, height: 720, floor: 610, left: 64, right: 1216, gravity: 2150, spriteSize: 250, standHeight: 208, crouchHeight: 130, pushDistance: 108 });
+// Viewport dimensions stay fixed; world coordinates extend above and sideways.
+export const WORLD = Object.freeze({ width:1280,height:720,arenaWidth:3840,top:-700,floor:610,left:64,right:3776,spawnX:1920,gravity:2050,fighterScale:.7,spriteSize:175,standHeight:145.6,crouchHeight:91,pushDistance:75.6,maxSeparation:1600,damageScale:.44,roundSeconds:90 });
+export const MOVEMENT=Object.freeze({runMultiplier:2.15,dashForward:1180,dashBack:1020,dashDuration:.20,airJumpRatio:1,blinkSpeed:2300,blinkDuration:.16,blinkCharges:2,blinkRecharge:2.5});
+
+export const PLATFORMS = Object.freeze([
+  {id:'left-canopy',x:300,y:410,w:290,kind:'awning'},
+  {id:'left-roof',x:630,y:190,w:300,kind:'roof'},
+  {id:'left-terrace',x:1040,y:-20,w:280,kind:'terrace'},
+  {id:'market-canopy',x:1350,y:405,w:280,kind:'awning'},
+  {id:'center-roof',x:1690,y:205,w:330,kind:'roof'},
+  {id:'high-walkway',x:2070,y:-10,w:310,kind:'terrace'},
+  {id:'sky-terrace',x:2440,y:-210,w:300,kind:'terrace'},
+  {id:'right-canopy',x:2550,y:410,w:320,kind:'awning'},
+  {id:'right-roof',x:2940,y:190,w:320,kind:'roof'},
+  {id:'right-terrace',x:3330,y:-20,w:280,kind:'terrace'},
+]);
+
+export const STAGES=Object.freeze([
+  {id:'street',name:'晴日老街',subtitle:'午后暖阳 · 棚架与屋檐',weather:'sun',image:'milk-rooftops.webp',platforms:PLATFORMS},
+  {id:'rain',name:'雨巷街口',subtitle:'细雨街灯 · 高低露台',weather:'rain',image:'milk-rain.webp',platforms:PLATFORMS.map((p,i)=>({...p,x:p.x+(i%2?55:-40),y:p.y+(p.kind==='roof'?-25:0)}))},
+]);
+export const stageById=id=>STAGES.find(stage=>stage.id===id)||STAGES[0];
 
 // Every variant retains the classic yellow milk-frog silhouette. Color accents,
 // movement and special moves give the variants different fighting identities.
 export const CHARACTERS = Object.freeze([
-  { id: 'classic', name: '奶蛙', short: '奶蛙', english: 'THE ORIGINAL', title: '笑着就把你打了', color: '#e2ab3c', accent: '#ae4a2d', hue: 0, speed: 310, power: 1, jump: 1030, special: 'wave', specialName: '奶气波', superName: '爆笑奶气炮', stats: [3, 3, 4], description: '经典大肚皮。攻守均衡，一发奶气波打开局面。' },
-  { id: 'green', name: '奶绿', short: '奶绿', english: 'FAST & FROGGY', title: '你还没反应过来', color: '#97ae58', accent: '#48634b', hue: 30, speed: 385, power: .86, jump: 1100, special: 'dash', specialName: '疾风突进', superName: '疾风连环踢', stats: [5, 2, 3], description: '脚下生风。突进贴脸，靠速度打出连续压制。' },
-  { id: 'red', name: '奶红', short: '奶红', english: 'RED HOT BELLY', title: '这一拳直接红温', color: '#cf7f6a', accent: '#ad3e30', hue: 340, speed: 275, power: 1.22, jump: 970, special: 'stomp', specialName: '红温震地', superName: '红温大爆发', stats: [2, 5, 3], description: '一肚子力量。近身重击和红温震地都很有分量。' },
-  { id: 'purple', name: '奶紫', short: '奶紫', english: 'PURPLE HAZE', title: '紫气一来你就慢了', color: '#a99cb6', accent: '#705787', hue: 275, speed: 320, power: .95, jump: 1050, special: 'bubble', specialName: '紫气泡泡', superName: '紫气东来', stats: [3, 3, 5], description: '紫气控场。泡泡命中会减速，拉开距离再出手。' },
+  { id: 'classic', name: '奶蛙', short: '奶蛙', english: 'THE ORIGINAL', title: '笑着就把你打了', color: '#e2ab3c', accent: '#ae4a2d', hue: 0, speed:360,power:1,jump:1220,special:'wave',specialName:'奶气波',superName:'爆笑奶气炮',stats:[3,3,4],description:'经典大肚皮。攻守均衡，一发奶气波打开局面。' },
+  { id:'green',name:'奶绿',short:'奶绿',english:'FAST & FROGGY',title:'你还没反应过来',color:'#97ae58',accent:'#48634b',hue:30,speed:430,power:.86,jump:1280,special:'dash',specialName:'疾风突进',superName:'疾风连环踢',stats:[5,2,3],description:'脚下生风。突进贴脸，靠速度打出连续压制。' },
+  { id:'red',name:'奶红',short:'奶红',english:'RED HOT BELLY',title:'这一拳直接红温',color:'#cf7f6a',accent:'#ad3e30',hue:340,speed:320,power:1.22,jump:1160,special:'stomp',specialName:'红温震地',superName:'红温大爆发',stats:[2,5,3],description:'一肚子力量。近身重击和红温震地都很有分量。' },
+  { id:'purple',name:'奶紫',short:'奶紫',english:'PURPLE HAZE',title:'紫气一来你就慢了',color:'#a99cb6',accent:'#705787',hue:275,speed:370,power:.95,jump:1230,special:'bubble',specialName:'紫气泡泡',superName:'紫气东来',stats:[3,3,5],description:'紫气控场。泡泡命中会减速，拉开距离再出手。' },
+  { id:'pink',name:'奶粉',short:'奶粉',english:'SWEET REVENGE',title:'甜一下，再揍一下',color:'#dda3b0',accent:'#af526e',speed:375,power:.92,jump:1240,special:'charm',specialName:'奶心弹',superName:'甜心大风暴',stats:[3,3,5],description:'奶心弹命中回复少量体力，让对手短暂失衡；连段只回复一次。' },
+  { id:'blue',name:'奶蓝',short:'奶蓝',english:'KEEP IT COOL',title:'先冷静，再出拳',color:'#7eafc8',accent:'#377b9e',speed:355,power:.96,jump:1260,special:'frost',specialName:'冰晶奶气',superName:'极地奶旋风',stats:[3,4,4],description:'冰晶命中产生短暂冰冻与减速，靠控制争取转身的时间。' },
 ]);
 
-export const MOVES = Object.freeze({
+const MOVE_DATA = {
   jab: { name:'直拳', startup:.06, active:.08, recovery:.14, damage:7, reach:112, top:164, bottom:105, level:'high', stun:.24, push:95, meter:8, rank:1 },
   jab2: { name:'追身肘', startup:.055, active:.09, recovery:.16, damage:6, reach:124, top:157, bottom:96, level:'high', stun:.25, push:85, meter:6, rank:1.5 },
   straight: { name:'崩山重拳', startup:.10, active:.11, recovery:.25, damage:10, reach:146, top:166, bottom:95, level:'high', stun:.33, push:185, meter:10, rank:2 },
@@ -33,11 +56,16 @@ export const MOVES = Object.freeze({
   superRise: { name:'九天升龙', startup:.13, active:.46, recovery:.35, damage:13, reach:175, top:315, bottom:40, level:'antiAir', stun:.32, push:45, launch:610, lift:610, cost:100, hits:3, interval:.15, meter:0, rank:5, invincible:.45 },
   superStorm: { name:'天降奶雨', startup:.28, active:.60, recovery:.34, damage:9, reach:240, level:'overhead', stun:.27, push:45, cost:100, hits:4, interval:.16, meter:0, rank:5, projectile:true, invincible:.35 },
   superFinish: { name:'奶气连携·终式', startup:.09, active:.68, recovery:.42, damage:8, reach:235, top:215, bottom:-5, level:'mid', stun:.24, push:25, cost:100, hits:6, interval:.11, meter:0, rank:5, drive:720, invincible:.45 },
-});
+};
+// Pose, hurtbox, reach, projectile and effect sizes use the same body scale.
+export const MOVES=Object.freeze(Object.fromEntries(Object.entries(MOVE_DATA).map(([name,move])=>[name,Object.freeze({...move,...Object.fromEntries(['reach','top','bottom','push'].filter(key=>key in move).map(key=>[key,move[key]*WORLD.fighterScale]))})])));
 
 export const isSuperMove = move => MOVES[move]?.rank === 5;
 export const isSkillMove = move => MOVES[move]?.rank === 4;
 export const COMMANDS = Object.freeze([
+  {keys:'E / P2：8',name:'闪移脱身',detail:'可存两次，方向 + 闪移穿过对手；受击后也可脱身，每 2.5 秒恢复一次。'},
+  {keys:'长按 W / 再按 W',name:'连续跳跃 / 二段跳',detail:'落地后自动再跳；空中松开再按可二段跳。摇杆持续上推或松开再上推相同。'},
+  {keys:'平台上按住下',name:'穿过平台',detail:'按住下约 0.2 秒即可跳下棚架或屋檐，地面不受影响。'},
   { keys:'J → J → J', name:'三连奶拳', detail:'直拳 → 追身肘 → 崩山重拳，命中后依次衔接。' },
   { keys:'J → K → L → I', name:'奶气连携·终式', detail:'连续命中后按必杀，接六段终式；本连招的技能消耗计入 100 奶气总额。' },
   { keys:'下 + J / 下 + K', name:'蹲拳 / 扫堂腿', detail:'蹲下躲高段；扫腿打下盘，站防挡不住。' },
@@ -59,8 +87,8 @@ export const DIFFICULTIES = Object.freeze({
 });
 
 export const KEYMAPS = Object.freeze([
-  { KeyA: 'left', KeyD: 'right', KeyW: 'jump', KeyS: 'down', KeyJ: 'jab', KeyK: 'kick', KeyL: 'special', KeyI: 'super', KeyU: 'uppercut', KeyO: 'grab', KeyH: 'taunt', ShiftLeft:'run', Space: 'guard' },
-  { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'jump', ArrowDown: 'down', Digit1: 'jab', Digit2: 'kick', Digit3: 'special', Digit4: 'super', Digit5: 'taunt', Digit6:'uppercut',Digit7:'grab', Numpad1: 'jab', Numpad2: 'kick', Numpad3: 'special', Numpad4: 'super', Numpad5: 'taunt',Numpad6:'uppercut',Numpad7:'grab', KeyN: 'jab', KeyM: 'kick', Comma: 'special', Period: 'super', KeyB: 'taunt', ShiftRight: 'guard' },
+  { KeyA: 'left', KeyD: 'right', KeyW: 'jump', KeyS: 'down', KeyE:'blink', KeyJ: 'jab', KeyK: 'kick', KeyL: 'special', KeyI: 'super', KeyU: 'uppercut', KeyO: 'grab', KeyH: 'taunt', ShiftLeft:'run', Space: 'guard' },
+  { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'jump', ArrowDown: 'down', Digit1: 'jab', Digit2: 'kick', Digit3: 'special', Digit4: 'super', Digit5: 'taunt', Digit6:'uppercut',Digit7:'grab',Digit8:'blink',Numpad8:'blink',Slash:'blink', Numpad1: 'jab', Numpad2: 'kick', Numpad3: 'special', Numpad4: 'super', Numpad5: 'taunt',Numpad6:'uppercut',Numpad7:'grab', KeyN: 'jab', KeyM: 'kick', Comma: 'special', Period: 'super', KeyB: 'taunt', ShiftRight: 'guard' },
 ]);
 
 export const characterById = id => CHARACTERS.find(character => character.id === id) || CHARACTERS[0];

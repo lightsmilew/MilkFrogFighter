@@ -2,6 +2,8 @@
 
 使用内置 `image_gen.imagegen` 工具；未使用 CLI 或第三方图像 API。画面方向为暖色手绘老街、奶油纸张、墨绿油墨和朱红，角色遵循用户给出的经典奶蛙形象。
 
+扩展晴天街区和雨天版本的原始提示词另存于 [stage-prompts.md](stage-prompts.md)，两张新地图沿用同一街区与绘画风格。
+
 ## 最终文件
 
 | 用途 | 文件 |
@@ -9,9 +11,13 @@
 | 游戏场景 WebP | `assets/milk-street.webp` |
 | 游戏动作 WebP | `assets/milkfrog-sprites.webp` |
 | 补充动作 WebP | `assets/milkfrog-advanced.webp` |
+| 扩展晴天街区 | `assets/milk-rooftops.webp` |
+| 扩展雨天街区 | `assets/milk-rain.webp` |
 | 场景原始 PNG | `assets/source/milk-street.png` |
 | 动作原始 PNG | `assets/source/milkfrog-sprites.png` |
 | 补充动作原始 PNG | `assets/source/milkfrog-advanced.png` |
+| 扩展晴天原始 PNG | `assets/source/milk-rooftops.png` |
+| 扩展雨天原始 PNG | `assets/source/milk-rain.png` |
 | 用户造型参考 | `docs/references/character-reference.jpg` |
 
 ## 场景提示词

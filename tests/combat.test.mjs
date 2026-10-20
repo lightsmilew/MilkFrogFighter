@@ -8,8 +8,8 @@ const input=(held=[],pressed=[])=>({held:new Set(held),pressed:new Set(pressed)}
 function arena(options={}){
   const events=[];
   const game=new Game({onEvent:event=>events.push(event),random:()=>.5});
-  game.start({mode:'local',...options});game.phase='fight';
-  game.fighters[0].x=500;game.fighters[1].x=630;
+  game.start({mode:'local',...options});game.phase='fight';game.platforms=[];
+  game.fighters[0].x=500;game.fighters[1].x=500+130*WORLD.fighterScale;
   return {game,events,a:game.fighters[0],b:game.fighters[1]};
 }
 function advance(game,seconds,held=[[],[]]){
@@ -21,7 +21,7 @@ function press(game,index,move,held=[[],[]]){
 
 test('a normal punch hits once during its active frames',()=>{
   const {game,a,b,events}=arena();press(game,0,'jab');advance(game,.7);
-  assert.equal(b.hp,93);assert.equal(a.hp,100);
+  assert.ok(b.hp>96&&b.hp<98);assert.equal(a.hp,100);
   assert.equal(events.filter(event=>event.type==='hit').length,1);
   assert.equal(game.matchStats[0].hits,1);
 });
@@ -37,20 +37,21 @@ test('guard reduces damage and produces a block, not a combo',()=>{
 });
 
 test('moving backward automatically guards a frontal hit',()=>{
-  const {game,a,b,events}=arena();b.x=600;a.x=500;
+  const {game,a,b,events}=arena();b.x=560;a.x=500;
   press(game,0,'jab',[[],['right']]);advance(game,.2,[[],['right']]);
   assert.ok(b.hp>98);assert.ok(events.some(event=>event.type==='block'));
 });
 
 test('crouching avoids a high jab but a crouched jab can hit low',()=>{
   const {game,b}=arena();press(game,0,'jab',[[],['down']]);advance(game,.6,[[],['down']]);assert.equal(b.hp,100);
-  game.fighters[0].x=500;b.x=630;
+  game.fighters[0].x=500;b.x=500+130*WORLD.fighterScale;
   press(game,0,'jab',[['down'],['down']]);advance(game,.4,[['down'],['down']]);assert.ok(b.hp<100);
 });
 
-test('jumping uses gravity, lands exactly, and cannot become a double jump',()=>{
+test('jumping uses gravity, permits one air jump, and then lands exactly',()=>{
   const {game,a}=arena();press(game,0,'jump');advance(game,.15);assert.ok(a.y<WORLD.floor);
-  const airborneVelocity=a.vy;press(game,0,'jump');assert.ok(a.vy>airborneVelocity);
+  press(game,0,'jump');assert.equal(a.airJumps,0);assert.ok(a.vy< -700);
+  advance(game,.2);const airborneVelocity=a.vy;press(game,0,'jump');assert.ok(a.vy>airborneVelocity);
   advance(game,1.5);assert.equal(a.y,WORLD.floor);assert.equal(a.vy,0);
 });
 
@@ -62,7 +63,7 @@ test('energy costs are enforced and super cannot be used without a full gauge',(
 
 test('milk wave travels and damages its opponent once',()=>{
   const {game,a,b}=arena();a.x=300;b.x=850;a.energy=50;
-  press(game,0,'special');advance(game,1.8);assert.equal(b.hp,85);assert.equal(game.projectiles.length,0);
+  press(game,0,'special');advance(game,1.8);assert.ok(b.hp>92&&b.hp<95);assert.equal(game.projectiles.length,0);
 });
 
 test('purple bubbles apply a temporary slowing effect',()=>{
@@ -83,7 +84,7 @@ test('a confirmed punch can cancel into a kick and increase the combo',()=>{
   for(let i=0;i<25&&!a.hasHit;i++)game.tick(1/60,[none(),none()]);
   assert.ok(a.hasHit);
   press(game,0,'kick');advance(game,.5);
-  assert.ok(b.hp<=81);assert.ok(game.matchStats[0].maxCombo>=2);
+  assert.ok(b.hp>89&&b.hp<93);assert.ok(game.matchStats[0].maxCombo>=2);
 });
 
 test('a whiffed punch cannot cancel its recovery into a kick',()=>{
@@ -98,8 +99,8 @@ test('taunting triggers the classic laugh and can be cancelled by movement',()=>
 
 test('fighters cannot walk through each other on the ground or leave the stage',()=>{
   const {game,a,b}=arena();advance(game,3,[['right'],['left']]);assert.ok(b.x-a.x>=WORLD.pushDistance-.01);
-  a.x=WORLD.left;b.x=WORLD.right;advance(game,2,[['left'],['right']]);
-  assert.equal(a.x,WORLD.left);assert.equal(b.x,WORLD.right);
+  a.x=WORLD.left;b.x=WORLD.left+500;advance(game,2,[['left'],[]]);assert.equal(a.x,WORLD.left);
+  a.x=WORLD.right-500;b.x=WORLD.right;advance(game,2,[[],['right']]);assert.equal(b.x,WORLD.right);
 });
 
 test('practice grants infinite energy, restores health after stun, and has no timer',()=>{

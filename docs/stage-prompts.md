@@ -1,0 +1,15 @@
+# 扩展街区生成提示词
+
+工具：内置 imagegen，无 CLI 或外部图像 API。
+
+晴天参考：`assets/source/milk-street.png`；最终保存为 `assets/source/milk-rooftops.png`，WebP 为 `assets/milk-rooftops.webp`。
+
+```text
+Use case: identity-preserve / illustration-story. Asset type: a very wide panoramic background for the expanded world of the existing milkfrog side-view fighting game. Use the supplied old Chinese milk-bar street painting as STYLE AND PLACE reference. Create an adjoining continuous long neighborhood street panorama, landscape aspect ratio about 8:3 (ideally 3840 by 1440). Preserve warm nostalgic hand-painted 1990s animation/gouache artwork, rich muted mint green storefronts, rusty orange fabric awnings, pale ochre plaster, wooden balconies, leafy green trees, amber late afternoon sunlight. No characters. Extend a whole block left to right with milk bar, fabric canopy, apartment terraces, tiled low roofs, market kiosk and rooftop planters, distant hill and pale blue sky with fluffy cream clouds. IMPORTANT side-view platform-fighter composition: upper half is mostly beautiful open sky, hanging utility wires and distant higher rooftops, leaving clear air for jumps; building facades and awnings occupy mainly the bottom half, and a continuous broad empty tan street fighting ground occupies only bottom 12 percent of total image. Side elevation, no road disappearing into distance. Render roofs/awnings as scenery, gameplay platforms will be drawn separately; do not paint floating islands or game UI. Keep the lower center relatively quiet so small yellow fighters read clearly. Coherent long panorama, no mirrored repeats, no collage seams, no distortion, no blank margins. No words, lettering, logos, HUD, watermark, frames or people. Preserve the reference's detailed painted textures and confident architectural lines, avoid shiny 3D and generic concept-art effects.
+```
+
+雨天参考：`assets/source/milk-rooftops.png`；最终保存为 `assets/source/milk-rain.png`，WebP 为 `assets/milk-rain.webp`。雨滴和涟漪在游戏中实时绘制。
+
+```text
+Use case: lighting-weather. Edit the supplied panoramic hand-painted Chinese neighborhood street game background into a rainy-day version of the same place. Preserve the exact long street geometry, architecture, wide camera and buildings, sky space and empty fighting ground. Keep warm nostalgic 1990s gouache animation background, not a photo or shiny 3D. Replace golden sunshine with muted blue-gray overcast afternoon, low soft rain clouds; add visibly wet ochre pavement with gentle puddle reflections of windows and rusty orange awnings; windows have soft warm light, roof tiles and leaves are wet and darker sage green. Beautiful gentle rainy neighborhood mood, readable medium contrast for small yellow fighters. No people or umbrellas or characters. IMPORTANT do NOT paint rain streaks in the image: rain drops and splash ripples will be animated in the game so the background itself should show wet surfaces and rainy lighting only. Preserve panorama aspect ratio and composition. No text, watermark, UI, borders, lightning or storm disaster.
+```

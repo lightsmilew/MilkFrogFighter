@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#263d34">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="description" content="奶蛙街头：一肚子奶气，一身好功夫。经典奶蛙表情包的街机格斗场，支持人机、同屏双人、练习与触屏操作。">
   <title>奶蛙街头 · MILKFROG FIGHT CLUB</title>
   <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
@@ -27,8 +29,8 @@
 
   <main class="page-shell">
     <section class="masthead" aria-label="街角擂台">
-      <div><p class="eyebrow">EST. 2026 &nbsp; / &nbsp; THE NEIGHBORHOOD ARCADE</p><h1>放学别走，<span>街角见。</span></h1></div>
-      <div class="masthead-right"><span class="edition">第 001 届 · 奶气大会</span><span class="tiny-caps">NO COINS NEEDED. JUST GOOD FIGHTS.</span></div>
+      <div><p class="eyebrow">MILKFROG FIGHT CLUB</p><h1>选只蛙，<span>选条街。</span></h1></div>
+      <div class="masthead-right"><span class="edition">六位选手 · 两条街区</span></div>
     </section>
 
     <section class="arcade" id="arcade" aria-label="奶蛙格斗游戏">
@@ -38,13 +40,15 @@
           <button class="mode-tab" data-mode="local" aria-pressed="false"><span>02</span> 同屏双人</button>
           <button class="mode-tab" data-mode="practice" aria-pressed="false"><span>03</span> 自由练习</button>
         </div>
-        <label class="difficulty-label" for="difficulty">对手脾气 <select id="difficulty"><option value="easy">散步蛙 · 轻松</option><option value="normal" selected>认真蛙 · 标准</option><option value="hard">暴躁蛙 · 挑战</option></select></label>
+        <div class="arcade-toolbar"><div class="toolbar-controls" id="screen-controls"><button id="pause-button" class="screen-button" aria-label="暂停游戏" title="暂停 Esc" hidden>Ⅱ</button><button id="fullscreen-button" class="screen-button" aria-label="切换全屏" title="全屏">⛶</button></div><label class="difficulty-label" for="difficulty">对手脾气 <select id="difficulty"><option value="easy">散步蛙 · 轻松</option><option value="normal" selected>认真蛙 · 标准</option><option value="hard">暴躁蛙 · 挑战</option></select></label></div>
       </div>
+
+      <div class="stage-picker" id="stage-picker"><span class="stage-picker-label">在哪里开打<small>二段跳上屋檐 · 闪移换身位</small></span><div class="stage-options" id="stage-options" role="group" aria-label="选择地图"></div></div>
 
       <div class="game-screen" id="game-screen">
         <canvas id="game" width="1280" height="720" tabindex="0" aria-label="奶蛙街头格斗画面。回车开始，WASD移动，双击方向冲刺，J拳、K脚、U升龙、O抱摔、L技能、I必杀，空格防御，Esc暂停。"></canvas>
         <div class="screen-grain" aria-hidden="true"></div>
-        <div class="stage-label" id="stage-label"><span class="live-dot"></span> 老街 · 午后四点 <span class="stage-en">THE MILK BAR</span></div>
+        <div class="stage-label" id="stage-label"><span class="live-dot"></span><span id="stage-label-text">晴日老街</span></div>
 
         <div class="home-overlay" id="home-overlay">
           <div class="home-copy">
@@ -57,12 +61,6 @@
           </div>
           <div class="seal" aria-hidden="true"><small>纯正原味</small><strong>100%</strong><span>奶气含量</span></div>
           <span class="hero-caption" aria-hidden="true">THE SMALL FROG WITH A BIG ATTITUDE.</span>
-        </div>
-
-        <div class="screen-controls" id="screen-controls" hidden>
-          <button id="laugh-button" class="screen-button" aria-label="捧腹大笑，快捷键 H" title="捧腹大笑 H">哈</button>
-          <button id="pause-button" class="screen-button" aria-label="暂停游戏" title="暂停 Esc">Ⅱ</button>
-          <button id="fullscreen-button" class="screen-button" aria-label="切换全屏" title="全屏">⛶</button>
         </div>
 
         <div class="center-overlay" id="pause-overlay" hidden>
@@ -85,7 +83,7 @@
       </div>
 
       <div class="arcade-bottom">
-        <span class="match-label"><i></i><span id="mode-description">人机对战 · 三局两胜 · 每局 60 秒</span></span>
+        <span class="match-label"><i></i><span id="mode-description">人机对战 · 三局两胜 · 每局 90 秒</span></span>
         <span id="record-label" class="record-label">本地战绩 0 胜 / 0 负</span>
         <div class="practice-tools" id="practice-tools" hidden><button id="dummy-button">木桩：站立</button><button id="practice-reset">重置练习</button></div>
         <span class="pause-hint"><kbd>ESC</kbd> 暂停</span>
@@ -93,7 +91,7 @@
 
       <div class="touch-controls" id="touch-controls" aria-label="触屏操作" hidden>
         <div class="joystick-wrap"><div id="joystick" class="joystick" role="group" aria-label="移动摇杆。左右拖动移动，推满奔跑，连续拨动冲刺，上推跳跃，下拉蹲下。"><span class="joystick-guide" aria-hidden="true"></span><span class="joystick-knob" aria-hidden="true"></span></div><small>推满跑 / 上推跳</small></div>
-        <div class="touch-actions"><button data-action="guard" class="touch-guard" aria-label="防御">挡</button><div class="touch-attack-grid"><button data-action="jab" aria-label="出拳">拳<small>J</small></button><button data-action="kick" aria-label="踢腿">脚<small>K</small></button><button data-action="uppercut" aria-label="升龙">升龙<small>U</small></button><button data-action="grab" aria-label="抱摔">抱摔<small>O</small></button><button data-action="special" aria-label="技能">技<small>20–35</small></button><button data-action="super" class="touch-super" aria-label="必杀">必杀<small>100</small></button></div></div>
+        <div class="touch-actions"><div class="touch-defense-grid"><button data-action="blink" class="touch-blink" aria-label="闪移脱身">闪<small data-blink-label>E</small></button><button data-action="guard" class="touch-guard" aria-label="防御">挡</button></div><div class="touch-attack-grid"><button data-action="jab" aria-label="出拳">拳<small>J</small></button><button data-action="kick" aria-label="踢腿">脚<small>K</small></button><button data-action="uppercut" aria-label="升龙">升龙<small>U</small></button><button data-action="grab" aria-label="抱摔">抱摔<small>O</small></button><button data-action="special" aria-label="技能">技<small>20–35</small></button><button data-action="super" class="touch-super" aria-label="必杀">必杀<small>100</small></button></div></div>
       </div>
     </section>
 
@@ -105,19 +103,18 @@
 
     <section class="quick-guide" aria-label="操作速查">
       <div class="guide-title"><span class="handwritten">喂，先看这个 ↗</span><h2>出招不难，<br>手感要练。</h2><button id="guide-help" class="underlined-button">翻翻完整招式本 →</button></div>
-      <div class="guide-column"><span class="guide-number">01 / 走两步</span><div class="key-cluster"><kbd>A</kbd><kbd>D</kbd><span>双击方向冲刺</span></div><div class="key-cluster"><kbd>W</kbd><span>跳跃</span><kbd>S</kbd><span>下蹲</span></div><p>蹲下躲高段，跳跃躲扫腿；空格防御。</p></div>
+      <div class="guide-column"><span class="guide-number">01 / 走两步</span><div class="key-cluster"><kbd>A</kbd><kbd>D</kbd><span>双击冲刺</span><kbd>E</kbd><span>闪移</span></div><div class="key-cluster"><kbd>W</kbd><span>连跳 / 二段跳</span><kbd>S</kbd><span>下蹲</span></div><p>空中再按 W 二段跳，平台按住 S 跳下；空格防御。</p></div>
       <div class="guide-column"><span class="guide-number">02 / 来两下</span><div class="key-cluster"><kbd>J</kbd><span>拳</span><kbd>K</kbd><span>脚</span><kbd>U</kbd><span>升龙</span></div><div class="key-cluster"><kbd>O</kbd><span>抱摔</span><kbd>L</kbd><span>技能</span></div><p>J → J → J 三连拳；下 + K 扫堂腿。</p></div>
       <div class="guide-column"><span class="guide-number">03 / 别客气</span><div class="key-cluster"><kbd>I</kbd><span>配方向，切换组合必杀</span></div><div class="mini-meter"><span></span><span></span><span></span><span></span><b>MAX!</b></div><p>前 + I 百裂拳 · 下 + I 升龙 · 后 + I 空袭。</p></div>
     </section>
-
-    <footer class="site-footer"><span>奶蛙街头 <b>®</b> <small>小拳头，大脾气。</small></span><span>为快乐而打 · MADE FOR A GOOD LAUGH</span><button id="credits-button">制作与素材 ↗</button></footer>
+    <footer class="site-footer"><span>奶蛙街头 <small>小拳头，大脾气。</small></span><button id="credits-button">制作与素材 ↗</button></footer>
   </main>
 
   <dialog id="help-dialog" class="paper-dialog" aria-labelledby="help-heading">
     <button class="dialog-close" data-close aria-label="关闭操作手册">×</button><span class="eyebrow">THE LITTLE BOOK OF BIG PUNCHES</span><h2 id="help-heading">街角招式本</h2><p class="dialog-intro">三局两胜。把对手的血条打空，或者在时间结束时保留更多体力。</p>
     <div class="help-players"><div><h3><span class="player-chip">P1</span> 一号选手</h3><dl><div><dt>移动 / 跳跃 / 下蹲</dt><dd><kbd>A</kbd><kbd>D</kbd> / <kbd>W</kbd> / <kbd>S</kbd></dd></div><div><dt>直拳 / 踢腿</dt><dd><kbd>J</kbd> / <kbd>K</kbd></dd></div><div><dt>技能 / 必杀</dt><dd><kbd>L</kbd> / <kbd>I</kbd></dd></div><div><dt>防御</dt><dd><kbd>SPACE</kbd> 或后退</dd></div></dl></div><div><h3><span class="player-chip p2">P2</span> 二号选手</h3><dl><div><dt>移动 / 跳跃 / 下蹲</dt><dd><kbd>←</kbd><kbd>→</kbd> / <kbd>↑</kbd> / <kbd>↓</kbd></dd></div><div><dt>直拳 / 踢腿</dt><dd><kbd>1</kbd> / <kbd>2</kbd></dd></div><div><dt>技能 / 必杀</dt><dd><kbd>3</kbd> / <kbd>4</kbd></dd></div><div><dt>防御</dt><dd><kbd>右 SHIFT</kbd> 或后退</dd></div></dl></div></div>
-    <p class="help-note">P1：U 升龙、O 抱摔；双击 A / D 冲刺，继续按住方向奔跑，也可按住左 Shift 加速。P2：6 升龙、7 抱摔，支持小键盘 1–7；拳 / 脚 / 技 / 必杀也可用 N / M / , / .。H 大笑（P2 按 5 或 B）播放经典原声。手柄 A/B/X/Y 为拳、脚、技、必杀，肩键防御，左右扳机为升龙 / 抱摔。</p>
-    <p class="help-note">手机：摇杆推满奔跑，连续向同一边拨两次冲刺；上推跳跃、下拉蹲下。方向与攻击可同时按，前 / 下 / 后 + 必杀分别出百裂拳 / 升龙 / 空袭。“前”“后”相对角色面向；P2 将下表 J/K/L/I/U/O 换为 1/2/3/4/6/7。</p>
+    <p class="help-note">P1：U 升龙、O 抱摔、E 闪移；P2：6 / 7 / 8（或 /）。双击方向冲刺，继续按住奔跑，P1 也可左 Shift 加速。按住 W / ↑ 落地后连续跳，空中松开再按可以二段跳；平台按住 S / ↓ 可穿过下落。H 大笑（P2 按 5 或 B）。手柄 A/B/X/Y 出招，肩键防御，左右扳机升龙 / 抱摔，按下左摇杆闪移。</p>
+    <p class="help-note">手机：摇杆推满奔跑，同向连拨冲刺；持续上推会落地连跳，松开再上推可二段跳，平台下拉可跳下。右手“闪”可存两次、每 2.5 秒恢复一次，可穿过对手，也能在短暂受击后脱身。方向与攻击可同时按，前 / 下 / 后 + 必杀选择百裂拳 / 升龙 / 空袭。前后相对角色朝向；P2 的 1/2/3/4/6/7 对应 J/K/L/I/U/O。</p>
     <h3>连招与组合大招</h3><ul class="command-list" id="command-list"></ul>
     <h3>街坊传授的三件事</h3><ol class="fight-tips"><li><strong>命中，再接招。</strong>拳命中后接脚，脚命中后接技能，技能命中后能接必杀。三次连续命中后按中立必杀，会接六段终式。</li><li><strong>高低段要看清。</strong>下蹲避开直拳、高踢与高段气功；跳跃躲扫腿和震地。飞踢、空袭能压蹲下，升龙能打空中。低段要蹲防，空中压制要站防；抱摔可破防。</li><li><strong>练习场随便试。</strong>无限时间、无限奶气，木桩脱离连击后回满体力。点击底栏可切换木桩格挡。</li></ol>
     <div class="special-list" id="special-list"></div><p class="help-note">Esc / P 暂停。切换窗口会自动暂停。双人请使用键盘或两只手柄；单个触屏面板控制 P1。</p>
@@ -129,14 +126,13 @@
     <label class="setting-row" for="music"><span>街机背景音乐<small>原创合成节拍</small></span><input type="checkbox" id="music" checked></label>
     <div class="setting-row"><span>经典奶蛙大笑<small>网络经典原声片段</small></span><button class="underlined-button" id="laugh-test">听一声 ♪</button></div>
     <label class="setting-row" for="shake"><span>命中震屏<small>出拳更有分量</small></span><input type="checkbox" id="shake" checked></label>
-    <label class="setting-row" for="scanlines"><span>老电视扫描线<small>来点旧时光</small></span><input type="checkbox" id="scanlines"></label>
     <label class="setting-row" for="touch-setting"><span>显示触屏按键<small>触屏设备默认开启</small></span><input type="checkbox" id="touch-setting"></label>
     <p class="help-note">设置和人机战绩只保存在当前浏览器。</p>
   </dialog>
 
   <dialog id="credits-dialog" class="paper-dialog small-dialog" aria-labelledby="credits-heading">
     <button class="dialog-close" data-close aria-label="关闭制作说明">×</button><span class="eyebrow">BEHIND THE MILK BAR</span><h2 id="credits-heading">为了笑着打一架</h2>
-    <p>角色以经典奶蛙表情包与用户提供的形象参考为基础，绘制格斗动作；奶蛙、奶绿、奶红、奶紫沿用同一套经典身体与五官比例。</p><p>场景和角色动作素材使用图像生成工具制作。战斗光效由 Canvas 实时绘制，打击音效及背景乐由 Web Audio 合成。大笑使用网络经典原声，来源：<a href="https://github.com/whitefirer/dsh-niulai-pet/blob/master/assets/nailong/nailong_laugh.mp3" target="_blank" rel="noopener noreferrer">dsh-niulai-pet 的原片大笑录音 ↗</a>。</p><p>形象参考：<a href="https://nai-hub.com/" target="_blank" rel="noopener noreferrer">奶-hub 表情库 ↗</a>，以及用户提供的经典奶蛙参考图。完整来源、提示词与架构记录见项目 README 和 docs。</p><p class="help-note">奶蛙爱好者的非官方格斗小游戏，与原形象权利方无关联。网页本身无需联网服务。</p>
+    <p>角色以经典奶蛙表情包与用户提供的形象参考为基础，绘制格斗动作；奶蛙、奶绿、奶红、奶紫、奶粉、奶蓝沿用同一套身体与五官比例。</p><p>场景和角色动作素材使用图像生成工具制作。战斗光效由 Canvas 实时绘制，打击音效及背景乐由 Web Audio 合成。大笑使用网络经典原声，来源：<a href="https://github.com/whitefirer/dsh-niulai-pet/blob/master/assets/nailong/nailong_laugh.mp3" target="_blank" rel="noopener noreferrer">dsh-niulai-pet 的原片大笑录音 ↗</a>。</p><p>形象参考：<a href="https://nai-hub.com/" target="_blank" rel="noopener noreferrer">奶-hub 表情库 ↗</a>，以及用户提供的经典奶蛙参考图。完整来源、提示词与架构记录见项目 README 和 docs。</p><p class="help-note">奶蛙爱好者的非官方格斗小游戏，与原形象权利方无关联。网页本身无需联网服务。</p>
   </dialog>
 
   <noscript><div class="noscript-note">开启 JavaScript 后就能和奶蛙一起开打。</div></noscript>

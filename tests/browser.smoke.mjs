@@ -13,7 +13,7 @@ const observe=page=>{
 };
 const state=page=>page.evaluate(async()=>{
   const {game}=await import('./src/app.js');
-  return {phase:game.phase,mode:game.mode,time:game.time,hp:game.fighters.map(f=>f.hp),x:game.fighters.map(f=>f.x),y:game.fighters.map(f=>f.y),vx:game.fighters.map(f=>f.vx),moves:game.fighters.map(f=>f.state),lastMoves:game.fighters.map(f=>f.lastMove?.move),attack:game.fighters[0].attack,energy:game.fighters.map(f=>f.energy),stats:game.matchStats};
+  return {phase:game.phase,mode:game.mode,stage:game.stageId,camera:game.camera,time:game.time,hp:game.fighters.map(f=>f.hp),x:game.fighters.map(f=>f.x),y:game.fighters.map(f=>f.y),vx:game.fighters.map(f=>f.vx),grounded:game.fighters.map(f=>f.grounded),blinkCharges:game.fighters[0].blinkCharges,grapples:game.grapples.length,airJumps:game.fighters[0].airJumps,jumpSince:game.fighters[0].jumpSince,jumps:window.__jumps||0,moves:game.fighters.map(f=>f.state),lastMoves:game.fighters.map(f=>f.lastMove?.move),attack:game.fighters[0].attack,energy:game.fighters.map(f=>f.energy),stats:game.matchStats};
 });
 async function waitState(page,predicate,timeout=10000){
   const deadline=Date.now()+timeout;
@@ -22,7 +22,17 @@ async function waitState(page,predicate,timeout=10000){
 }
 async function resetPractice(page){
   await page.locator('#practice-reset').click();
-  await page.evaluate(async()=>{const {game}=await import('./src/app.js');game.fighters[0].x=500;game.fighters[1].x=610;});
+  await page.evaluate(async()=>{const {game}=await import('./src/app.js');const {WORLD}=await import('./src/config.js');game.fighters[0].x=500;game.fighters[1].x=500+WORLD.pushDistance+2;});
+}
+async function assertPauseFits(page,name){
+  await page.locator('#pause-button').click();
+  const fits=await page.evaluate(()=>{
+    const screen=document.getElementById('game-screen').getBoundingClientRect();
+    const items=[document.querySelector('#pause-overlay .overlay-card'),...document.querySelectorAll('#pause-overlay button')];
+    return items.every(e=>{const r=e.getBoundingClientRect();return r.left>=screen.left&&r.right<=screen.right&&r.top>=screen.top&&r.bottom<=screen.bottom;});
+  });
+  assert.ok(fits,`${name} pause and every action must fit the game screen`);
+  await page.screenshot({path:`artifacts/pause-${name}.png`});await page.locator('#resume-button').click();
 }
 await mkdir('artifacts',{recursive:true});
 try{
@@ -30,10 +40,16 @@ try{
   const page=await context.newPage();observe(page);
   await page.goto(base);await page.locator('#start-button:enabled').waitFor();
   assert.equal(await page.title(),'奶蛙街头 · MILKFROG FIGHT CLUB');
-  assert.equal(await page.locator('.fighter-card').count(),4);
-  assert.equal(await page.locator('.fighter-info h3').allTextContents().then(x=>x.join(',')),'奶蛙,奶绿,奶红,奶紫');
+  assert.equal(await page.locator('.fighter-card').count(),6);
+  assert.equal(await page.locator('.fighter-info h3').allTextContents().then(x=>x.join(',')),'奶蛙,奶绿,奶红,奶紫,奶粉,奶蓝');
+  assert.equal(await page.locator('[data-stage]').count(),2);assert.ok(await page.locator('.quick-guide').isVisible());
+  assert.equal(await page.locator('#laugh-button').count(),0);assert.equal(await page.locator('#game-screen #pause-button, #game-screen #fullscreen-button').count(),0);
+  assert.ok(await page.locator('#fullscreen-button').evaluate(e=>e.closest('.arcade-top')!==null));
+  const fullBox=await page.locator('#fullscreen-button').boundingBox(),difficultyBox=await page.locator('.difficulty-label').boundingBox();assert.ok(fullBox.x+fullBox.width<=difficultyBox.x);
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   await page.screenshot({path:'artifacts/lobby-desktop.png',fullPage:true});
+  await page.locator('[data-stage="rain"]').click();assert.equal((await state(page)).stage,'rain');
+  await page.locator('#game-screen').screenshot({path:'artifacts/rain-lobby.png'});
   await page.locator('#laugh-preview').click();
   const audio=await page.evaluate(async()=>{
     const response=await fetch(new URL('./assets/audio/classic-laugh.mp3',location.href));
@@ -98,15 +114,49 @@ try{
       const f=frames[i],x=i%5*240,y=Math.floor(i/5)*180;
       draw.drawImage(f.canvas,x+30,y+5,170,170);draw.fillStyle='#263d34';draw.font='13px monospace';draw.fillText(`FRAME ${i}`,x+10,y+19);
     }
-    return {count:frames.length,leftPixels,bounds:laugh.bounds,preview:canvas.toDataURL('image/png').split(',')[1]};
+    const tags=[],original=draw.fillText.bind(draw);draw.fillText=(label,...args)=>{tags.push(label);original(label,...args);};
+    const {game}=await import('./src/app.js');const {WORLD}=await import('./src/config.js');
+    for(const mode of ['ai','local','practice'])renderer.drawPlayerTag(draw,game.fighters[1],{mode,camera:{scale:1}});
+    renderer.drawPlayerTag(draw,game.fighters[0],{mode:'ai',camera:{scale:1}});
+    const rainCanvas=document.createElement('canvas');rainCanvas.width=1280;rainCanvas.height=720;const rain=rainCanvas.getContext('2d');
+    renderer.drawWeather(rain,{stageId:'rain',phase:'attract',time:0});const first=rainCanvas.toDataURL();rain.clearRect(0,0,1280,720);
+    renderer.drawWeather(rain,{stageId:'rain',phase:'attract',time:.3});const second=rainCanvas.toDataURL();
+    const badgeCanvas=document.createElement('canvas');badgeCanvas.width=130;badgeCanvas.height=60;const badge=badgeCanvas.getContext('2d');
+    renderer.drawPlayerTag(badge,{index:0,x:65,y:WORLD.standHeight+45,crouching:false,downTime:0,slow:0,charm:0},{mode:'ai',camera:{scale:1}});
+    return {count:frames.length,leftPixels,bounds:laugh.bounds,tags,badgeCornerAlpha:badge.getImageData(30,4,1,1).data[3],rainMoves:first!==second,preview:canvas.toDataURL('image/png').split(',')[1]};
   });
   assert.equal(atlas.count,20);assert.equal(atlas.leftPixels,0);
+  assert.deepEqual(atlas.tags,['P2 · 电脑','P2 · 玩家','P2 · 木桩','P1 · 玩家']);assert.ok(atlas.rainMoves);assert.equal(atlas.badgeCornerAlpha,0);
   await writeFile('artifacts/isolated-frames.png',Buffer.from(atlas.preview,'base64'));
   report.push({check:'20 isolated animation frames; laugh has no detached foot',bounds:atlas.bounds});
+  await resetPractice(page);
+  await page.keyboard.press('KeyO');await waitState(page,s=>s.grapples===1);await page.waitForTimeout(230);
+  await page.locator('#game-screen').screenshot({path:'artifacts/throw-arc.png'});
+  await waitState(page,s=>s.grapples===0&&s.x[1]<s.x[0]);await page.locator('#game-screen').screenshot({path:'artifacts/throw-landing.png'});
+  report.push({check:'throw catch, arc, opposite-side landing and recovery'});
+  await resetPractice(page);
+  await page.evaluate(async()=>{const {game}=await import('./src/app.js');window.__jumps=0;const previous=game.onEvent;game.onEvent=e=>{previous(e);if(e.type==='jump'&&e.index===0)window.__jumps++;};});
+  await page.keyboard.down('KeyW');await page.waitForTimeout(2300);await page.keyboard.up('KeyW');assert.ok((await state(page)).jumps>=2);
+  await waitState(page,s=>s.y[0]<600&&s.jumpSince>.15&&s.airJumps===1);
+  await page.keyboard.press('KeyW');await waitState(page,s=>s.airJumps===0);
+  await resetPractice(page);
+  await page.evaluate(async()=>{const {game}=await import('./src/app.js');game.fighters[0].x=2800;game.fighters[1].x=3100;});
+  await waitState(page,s=>s.camera.x>1900);await page.locator('#game-screen').screenshot({path:'artifacts/rain-wide-stage.png'});
+  await page.evaluate(async()=>{const {game}=await import('./src/app.js');const [a,b]=game.fighters;a.x=2500;a.y=-210;a.platformId='sky-terrace';b.x=2300;b.y=-10;b.platformId='high-walkway';});
+  await waitState(page,s=>s.camera.y< -300);await page.locator('#game-screen').screenshot({path:'artifacts/rooftop-platforms.png'});
+  report.push({check:'rain animation, overhead player roles, camera pan, held keyboard jumps and double jump'});
   await resetPractice(page);
   await page.locator('#fullscreen-button').click();
   assert.ok(await page.evaluate(()=>Boolean(document.fullscreenElement)));
   await page.locator('#fullscreen-button').click();
+  for(const failure of ['missing','rejected']){
+    await page.evaluate(failure=>{const element=document.getElementById('arcade');element.requestFullscreen=failure==='missing'?undefined:()=>Promise.reject(new Error('Not allowed'));element.webkitRequestFullscreen=undefined;},failure);
+    await page.locator('#fullscreen-button').click();assert.ok(await page.locator('#arcade.is-immersive').isVisible());
+    assert.ok(await page.evaluate(()=>{const r=document.getElementById('arcade').getBoundingClientRect();return Math.abs(r.width-innerWidth)<2&&Math.abs(r.height-innerHeight)<2;}));
+    await page.locator('#fullscreen-button').click();assert.equal(await page.locator('#arcade.is-immersive').count(),0);
+  }
+  await page.evaluate(()=>{delete document.getElementById('arcade').requestFullscreen;delete document.getElementById('arcade').webkitRequestFullscreen;});
+  report.push({check:'native fullscreen and absent/rejected-API immersive fallback'});
   await page.keyboard.press('Escape');await page.locator('#lobby-button').click();
 
   await page.locator('[data-mode="local"]').click();await page.locator('#start-button').click();
@@ -122,18 +172,19 @@ try{
   assert.ok((await page.locator('#result-title').textContent()).includes('P1'));
   await page.locator('#result-lobby-button').click();
   await page.locator('#settings-button').click();
-  await page.locator('#scanlines').check();await page.locator('#music').uncheck();
+  assert.equal(await page.locator('#scanlines').count(),0);await page.locator('#volume').fill('67');await page.locator('#music').uncheck();
   await page.locator('#settings-dialog [data-close]').click();
   await page.reload();await page.locator('#start-button:enabled').waitFor();
-  assert.ok(await page.locator('body').evaluate(body=>body.classList.contains('scanlines')));
+  assert.equal((await state(page)).stage,'rain');
   await page.locator('#settings-button').click();assert.equal(await page.locator('#music').isChecked(),false);
-  await page.locator('#scanlines').uncheck();await page.locator('#settings-dialog [data-close]').click();
+  assert.equal(await page.locator('#volume').inputValue(),'67');await page.locator('#settings-dialog [data-close]').click();
 
   const mobileContext=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:1});
   const mobile=await mobileContext.newPage();observe(mobile);await mobile.goto(base);await mobile.locator('#start-button:enabled').waitFor();
   assert.ok(await mobile.locator('#touch-controls').isVisible());
   assert.ok(await mobile.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   await mobile.screenshot({path:'artifacts/lobby-mobile.png',fullPage:true});
+  await mobile.locator('[data-stage="rain"]').tap();
   await mobile.locator('[data-mode="practice"]').click();await mobile.locator('#start-button').click();
   const stick=await mobile.locator('#joystick').boundingBox();
   const center={x:stick.x+stick.width/2,y:stick.y+stick.height/2};
@@ -141,7 +192,7 @@ try{
   assert.ok((await state(mobile)).x[0]>500);
   await mobile.mouse.move(center.x,center.y);await mobile.mouse.down();await mobile.mouse.move(center.x,center.y-stick.height*.36);await mobile.waitForTimeout(90);
   assert.equal((await state(mobile)).moves[0],'jump');await mobile.mouse.up();
-  await mobile.waitForTimeout(950);
+  await waitState(mobile,s=>s.grounded[0]);
   assert.equal(await mobile.locator('#joystick').evaluate(element=>element.style.getPropertyValue('--stick-x')),'0px');
   // Real two-finger touch: keep the stick dragged while tapping an attack.
   const cdp=await mobileContext.newCDPSession(mobile);
@@ -162,15 +213,29 @@ try{
   await mobile.waitForTimeout(300);
   await mobile.screenshot({path:'artifacts/fight-mobile.png',fullPage:true});
   report.push({check:'mobile pointer controls',...await state(mobile)});
-  await mobile.locator('#pause-button').tap();assert.ok(await mobile.locator('#pause-overlay').isVisible());
-  await mobile.locator('#resume-button').tap();
+  await assertPauseFits(mobile,'portrait-390');
   for(const [action,move] of [['uppercut','uppercut'],['grab','grab']]){
     await resetPractice(mobile);await mobile.locator(`[data-action="${action}"]`).tap();
     await waitState(mobile,s=>s.lastMoves[0]===move);
   }
   await resetPractice(mobile);
+  await mobile.evaluate(async()=>{const {game}=await import('./src/app.js');window.__jumps=0;const previous=game.onEvent;game.onEvent=e=>{previous(e);if(e.type==='jump'&&e.index===0)window.__jumps++;};});
+  const jumpStick=await mobile.locator('#joystick').boundingBox();
+  const upFinger={id:7,x:jumpStick.x+jumpStick.width/2,y:jumpStick.y+jumpStick.height*.15,radiusX:5,radiusY:5};
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[upFinger]});await mobile.waitForTimeout(2300);
+  assert.ok((await state(mobile)).jumps>=2);
+  upFinger.y=jumpStick.y+jumpStick.height/2;await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[upFinger]});
+  await waitState(mobile,s=>s.y[0]<600&&s.jumpSince>.15&&s.airJumps===1);
+  upFinger.y=jumpStick.y+jumpStick.height*.15;await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[upFinger]});
+  await waitState(mobile,s=>s.airJumps===0);await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  await resetPractice(mobile);await mobile.locator('[data-action="blink"]').tap();await waitState(mobile,s=>s.moves[0]==='blink');
+  await mobile.waitForTimeout(200);assert.equal((await state(mobile)).blinkCharges,1);
+  await mobile.locator('[data-action="blink"]').tap();await waitState(mobile,s=>s.blinkCharges===0);
+  report.push({check:'real held-up joystick repeats, release/re-push double jumps, touch blink'});
+  await resetPractice(mobile);
   const superButton=await mobile.locator('[data-action="super"]').boundingBox();
-  const downFinger={id:3,x:center.x,y:center.y+stick.height*.34,radiusX:5,radiusY:5};
+  const currentStick=await mobile.locator('#joystick').boundingBox();
+  const downFinger={id:3,x:currentStick.x+currentStick.width/2,y:currentStick.y+currentStick.height*.84,radiusX:5,radiusY:5};
   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[downFinger]});
   await mobile.waitForTimeout(70);
   const superFinger={id:4,x:superButton.x+superButton.width/2,y:superButton.y+superButton.height/2,radiusX:5,radiusY:5};
@@ -189,10 +254,17 @@ try{
   await mobile.screenshot({path:'artifacts/fight-mobile-landscape.png',fullPage:true});
   const bounds=await mobile.evaluate(()=>{
     const buttons=[...document.querySelectorAll('.touch-actions button')].map(e=>e.getBoundingClientRect());
-    const tools=[...document.querySelectorAll('.screen-controls button')].map(e=>e.getBoundingClientRect());
+    const tools=[...document.querySelectorAll('.toolbar-controls button')].filter(e=>!e.hidden).map(e=>e.getBoundingClientRect());
     return {inside:buttons.every(b=>b.left>=0&&b.right<=innerWidth&&b.bottom<=innerHeight),overlap:buttons.some(a=>tools.some(b=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top))};
   });
   assert.ok(bounds.inside);assert.equal(bounds.overlap,false);
+  await assertPauseFits(mobile,'landscape-844');
+  await mobile.evaluate(()=>{document.getElementById('arcade').requestFullscreen=undefined;document.getElementById('arcade').webkitRequestFullscreen=undefined;});
+  await mobile.locator('#fullscreen-button').tap();assert.ok(await mobile.locator('#arcade.is-immersive').isVisible());
+  await mobile.screenshot({path:'artifacts/mobile-immersive.png'});await assertPauseFits(mobile,'immersive-844');await mobile.locator('#fullscreen-button').tap();
+  await mobile.setViewportSize({width:320,height:568});await assertPauseFits(mobile,'portrait-320');
+  assert.ok(await mobile.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  report.push({check:'top toolbar, transparent tags, two touch flashes and bounded mobile pause at 320/390/844 plus immersive'});
   await mobileContext.close();await context.close();
   assert.deepEqual(errors,[]);
   await writeFile('artifacts/browser-report.json',JSON.stringify({passed:true,report,errors},null,2));
