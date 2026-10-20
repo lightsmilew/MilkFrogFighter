@@ -114,8 +114,10 @@ export class ArcadeAudio {
     switch (name) {
       case 'select': this.tone(660, .06, 'square', .06); this.tone(880, .09, 'square', .045, now + .055); break;
       case 'start': [330, 440, 660, 880].forEach((note, i) => this.tone(note, .13, 'square', .06, now + i * .075)); break;
-      case 'attack': this.noise(.05, .06, 2400); break;
-      case 'hit': this.noise(.11, .36, 550); this.tone(detail.move === 'kick' ? 95 : 145, .18, 'triangle', .36, 0, 35); this.tone(950,.035,'square',.055); break;
+      case 'attack': this.noise(detail.move==='spin'?.18:.05,.06,2400); if(detail.move==='uppercut')this.tone(140,.18,'triangle',.12,0,560); break;
+      case 'dash': this.noise(.16,.12,1800); this.tone(100,.1,'triangle',.05,0,220); break;
+      case 'skill': this.tone(390,.17,'sine',.1,0,780); this.noise(.12,.07,3200); break;
+      case 'hit': this.noise(.11, .36, 550); this.tone(['kick','sweep','grab','diveKick'].includes(detail.move) ? 85 : 145, .18, 'triangle', .36, 0, 35); this.tone(950,.035,'square',.055); break;
       case 'block': this.tone(480, .07, 'square', .09, 0, 170); this.noise(.035, .1, 4000); break;
       case 'jump': this.tone(175, .09, 'sine', .08, 0, 330); break;
       case 'land': this.noise(.04, .07, 500); break;

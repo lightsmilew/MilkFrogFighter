@@ -8,8 +8,10 @@
 | --- | --- |
 | 游戏场景 WebP | `assets/milk-street.webp` |
 | 游戏动作 WebP | `assets/milkfrog-sprites.webp` |
+| 补充动作 WebP | `assets/milkfrog-advanced.webp` |
 | 场景原始 PNG | `assets/source/milk-street.png` |
 | 动作原始 PNG | `assets/source/milkfrog-sprites.png` |
+| 补充动作原始 PNG | `assets/source/milkfrog-advanced.png` |
 | 用户造型参考 | `docs/references/character-reference.jpg` |
 
 ## 场景提示词
@@ -34,5 +36,24 @@ Use case: identity-preserve. Asset type: complete transparent 2D fighting-game c
 Use case: precise-object-edit. Edit the provided transparent 4-column by 3-row milkfrog game sprite sheet. The user says the current characters look DOWN AT THE GROUND and this looks wrong in the game. Fix ONLY head orientation and gaze across ALL 12 cells. Heads should be upright, the FACE looking outward toward the viewer and horizontally toward an opponent on the RIGHT at the same head height. In neutral and walking poses, use a clear frontal three-quarter face with BOTH green eyes well visible. Put each BLACK PUPIL at the vertical CENTER of its pale green rounded eyeball, not at its bottom; nudge pupils horizontally toward screen right as a coherent focused gaze. No downward pupil placement, no tilted-down face, no looking at own belly or feet. The big round head, soft yellow body and small smile must look natural and harmonious, keep the eyes moderate sized as they are, NOT oversized, bulging, googly, stalked or caricatured. Preserve the smooth soft 3D style, large pear-shaped yellow body, ivory belly, olive gray hands and feet, exact all 12 action poses and cell positions, same sheet dimensions and transparent background. Do not change the grid, body/limb proportions, cell scales or animation pose layout. No added glow or text. User's highest priority: a coherent upright classic milkfrog body and a level gaze toward its opponent, not the floor.
 ```
 
-变体不是再次生成四套身体；渲染器保留源图比例、绿色眼睛与奶白肚皮，选择性映射黄色皮肤为奶绿、奶红、奶紫。动作图集保持 4 列 × 3 行十二姿态，角色脚底锚点在渲染时校准。
+变体共享身体、绿色眼睛与奶白肚皮，选择性映射黄色皮肤为奶绿、奶红、奶紫。基础图集十二姿态，补充图集八姿态，脚底锚点与主要轮廓在渲染时校准。
+
+## 补充动作提示词规格
+
+工具：内置 imagegen；参考图：`assets/source/milkfrog-sprites.png`。本轮生成要求整理如下，最终产物为 `assets/source/milkfrog-advanced.png`。
+
+```text
+Use case: identity-preserve. Supplementary transparent fighting-game sprite atlas.
+Preserve the exact milkfrog identity, harmonious round yellow body, ivory belly,
+moderate green eyes with centered black pupils, olive-gray hands and feet,
+soft 3D material and level gaze of the supplied existing sprite sheet.
+Strict four columns by two rows, eight isolated full-body poses facing right.
+Row 1: deep crouching guard; crouching low punch; extended low sweeping kick;
+rising uppercut with raised fist and bent knee.
+Row 2: airborne diagonal diving kick; forward-reaching grab startup;
+rotating extended spinning kick; fast forward sprint.
+Keep common camera, lighting and character proportions. Keep wide transparent
+gutters and all hands and feet within their cells. Crouched silhouettes should
+sit lower than standing poses. No shadows, background, effects, labels or text.
+```
 

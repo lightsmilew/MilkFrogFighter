@@ -97,7 +97,7 @@ test('taunting triggers the classic laugh and can be cancelled by movement',()=>
 });
 
 test('fighters cannot walk through each other on the ground or leave the stage',()=>{
-  const {game,a,b}=arena();advance(game,3,[['right'],['left']]);assert.ok(b.x-a.x>=87.99);
+  const {game,a,b}=arena();advance(game,3,[['right'],['left']]);assert.ok(b.x-a.x>=WORLD.pushDistance-.01);
   a.x=WORLD.left;b.x=WORLD.right;advance(game,2,[['left'],['right']]);
   assert.equal(a.x,WORLD.left);assert.equal(b.x,WORLD.right);
 });

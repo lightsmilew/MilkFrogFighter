@@ -1,4 +1,4 @@
-import { CHARACTERS } from './config.js';
+import { CHARACTERS, COMMANDS } from './config.js';
 import { Game } from './engine.js';
 import { Renderer } from './renderer.js';
 import { Input } from './input.js';
@@ -221,6 +221,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&state.acti
 window.addEventListener('blur',()=>{if(state.active&&!state.paused)setPaused(true);});
 
 $('special-list').innerHTML=CHARACTERS.map(character=>`<div style="--accent:${character.accent}"><strong>${character.name}</strong><p>${character.specialName} · 25 奶气<br>${character.superName} · 100 奶气</p></div>`).join('');
+$('command-list').innerHTML=COMMANDS.map(command=>`<li><code>${command.keys}</code><div><strong>${command.name}</strong><p>${command.detail}</p></div></li>`).join('');
 $('start-button').disabled=true;
 applySettings();updateRecord();updateMode();renderRoster();game.preview(state.p1,state.p2);
 

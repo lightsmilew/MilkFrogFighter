@@ -76,6 +76,7 @@ export class Input {
       if(distance>radius*.22){
         if(nx<-.28)held.add('left');if(nx>.28)held.add('right');
         if(ny<-.52)held.add('jump');if(ny>.48)held.add('down');
+        if(Math.abs(nx)>.86&&Math.abs(ny)<.48)held.add('run');
       }
       held.forEach(action=>{if(!this.stickHeld.has(action))this.stickEdges.add(action);});
       this.stickHeld=held;
@@ -116,8 +117,12 @@ export class Input {
       if (pad.axes[0] > .35 || button(15)) down.add('right');
       if (pad.axes[1] < -.5 || button(12)) down.add('jump');
       if (pad.axes[1] > .5 || button(13)) down.add('down');
+      if (Math.abs(pad.axes[0])>.86&&Math.abs(pad.axes[1])<.5) down.add('run');
       ['jab', 'kick', 'special', 'super'].forEach((action, n) => { if (button(n)) down.add(action); });
       if (button(4) || button(5)) down.add('guard');
+      if (button(6)) down.add('uppercut');
+      if (button(7)) down.add('grab');
+      if (button(8)) down.add('taunt');
       down.forEach(action => {
         inputs[index].held.add(action);
         if (!this.previousPads[index].has(action)) inputs[index].pressed.add(action);
