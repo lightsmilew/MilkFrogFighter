@@ -20,14 +20,14 @@ export class Fighter {
       combo:0,comboTimer:0,maxCombo:0,landed:0,blocking:false,crouching:false,flash:0,invincible:0,
       buffer:null,cancelTime:0,aiThink:0,aiHeld:new Set(),hasHit:false,stunKind:'hurt',tauntTime:0,
       inputHeld:new Set(),history:[],tapTimes:{left:-10,right:-10},pendingDash:null,
-      dashTime:0,dashCooldown:0,dashDirection:0,runDirection:0,jumpBuffer:0,jumpDodge:0,
+      dashTime:0,dashCooldown:0,dashDirection:0,runDirection:0,jumpBuffer:0,jumpDodge:0,jumpReadyAt:0,upAttackHold:false,hitstunTime:0,
       confirmedMoves:[],lastMove:null,lastMoveTime:0,afterimages:[],
       platformId:null,airJumps:1,jumpSince:0,jumpRepeatDelay:0,dropThrough:0,dropHold:0,
       blinkTime:0,blinkCooldown:0,reaction:null,downTime:0,getUpTime:0,grappled:false,throwing:false,throwRotation:0,
       blinkCharges:MOVEMENT.blinkCharges,blinkRecharge:0,blinkBuffer:0,
       frost:0,charm:0,slowSource:null,healIds:[],juggleCount:0,
       frostStacks:0,frostWindow:0,petals:0,petalWindow:0,armorUsed:false,counterTime:0,
-      aiPlan:[],aiLastConfirm:0,aiIntent:'approach',aiStats:{confirms:0,punishes:0,defenses:0},
+      aiPlan:[],aiLastConfirm:0,aiConfirmWatch:null,aiBlinkWatch:null,aiBlinkNext:0,aiRestUntil:0,aiWasAttacking:false,aiIntent:'approach',aiStats:{confirms:0,punishes:0,defenses:0,blinks:0},
     });
   }
   get grounded(){return (this.platformId!==null||this.y>=WORLD.floor-.5)&&this.vy>=0&&!this.grappled;}
@@ -117,10 +117,14 @@ export class Game {
       }
     }
     f.history=f.history.filter(e=>this.time-e.time<.6).slice(-12);f.inputHeld=new Set(input.held);
-    if(pressed.has('jump'))f.jumpBuffer=.14;
+    if(!input.held.has('jump'))f.upAttackHold=false;
+    if(pressed.has('jump')){f.jumpBuffer=.2;f.jumpReadyAt=this.time+(f.grounded ? .08 : 0);if(f.grounded)f.jumpDodge=.12;}
     if(input.command&&moveFor(f.character,input.command)){f.buffer={move:input.command,raw:input.command,ttl:.20};return;}
     for(const raw of ATTACK_INPUTS)if(pressed.has(raw)){
-      f.buffer={move:this.chooseMove(f,raw,input.held,pressed),raw,ttl:.20};break;
+      const move=this.chooseMove(f,raw,input.held,pressed);
+      if(move==='uppercut'&&raw==='jab'&&input.held.has('jump')){f.jumpBuffer=0;f.upAttackHold=true;}
+      if(move==='grab')f.dropHold=0;
+      f.buffer={move,raw,ttl:.20};break;
     }
   }
   chooseMove(f,raw,held,pressed=new Set()){
@@ -147,8 +151,10 @@ export class Game {
       return 'special';
     }
     if(raw==='jab'){
+      if(held.has('jump'))return 'uppercut';
+      if(down)return 'grab';
       if(!f.grounded)return 'airJab';
-      if(down)return 'lowJab';
+      if(backward)return 'lowJab';
       if(quarterCircle){f.history=[];return 'uppercut';}
       if(f.attack?.move==='jab'&&f.hasHit)return 'jab2';
       if(f.attack?.move==='jab2'&&f.hasHit)return 'straight';
@@ -174,6 +180,7 @@ export class Game {
       if(f.blinkRecharge<=0){f.blinkCharges++;f.blinkRecharge=f.blinkCharges<MOVEMENT.blinkCharges?f.blinkRecharge+MOVEMENT.blinkRecharge:0;}
     }
     f.blinkCooldown=f.blinkCharges>0?0:Math.max(0,f.blinkRecharge);
+    f.hitstunTime=f.stun>0&&f.stunKind==='hurt'?f.hitstunTime+dt:0;
     f.jumpSince+=dt;if(f.reaction)f.reaction.age+=dt;
     f.trailHp+=(f.hp-f.trailHp)*Math.min(1,dt*3.5);f.energy=clamp(f.energy+dt*3.5,0,100);
     if(f.comboTimer===0){f.combo=0;f.confirmedMoves=[];}
@@ -183,7 +190,7 @@ export class Game {
     f.afterimages=f.afterimages.filter(image=>(image.life-=dt)>0);
     if(f.grappled||f.throwing)return;
     if(pressed.has('blink'))f.blinkBuffer=.22;
-    if(f.blinkBuffer>0&&f.blinkTime<=0&&f.blinkCharges>0&&f.downTime<=0&&(!f.attack||!isSuperMove(f.attack.move))&&(!f.reaction||f.reaction.age>.10))this.beginBlink(f,held);
+    if(f.blinkBuffer>0&&f.blinkTime<=0&&f.blinkCharges>0&&f.downTime<=0&&(!f.attack||!isSuperMove(f.attack.move))&&(!f.reaction||f.hitstunTime>.10||f.reaction.age>.10))this.beginBlink(f,held);
     if(f.blinkTime>0){
       f.state='blink';f.crouching=false;f.blocking=false;
       if(Math.floor(f.stateTime*60)%2===0)f.afterimages.push({x:f.x,y:f.y,life:.23});
@@ -220,8 +227,8 @@ export class Game {
     if(pressed.has('taunt')&&f.grounded&&f.tauntTime<=0){f.tauntTime=1.8;f.stateTime=0;this.emit('laugh',{index:f.index});}
     if(f.buffer||f.jumpBuffer>0||held.has('left')||held.has('right')||held.has('guard'))f.tauntTime=0;
     if(f.tauntTime>0){f.tauntTime=Math.max(0,f.tauntTime-dt);f.state='taunt';f.vx=0;f.blocking=false;this.physics(f,dt);return;}
-    if(!held.has('guard')&&!held.has('down')){
-      if(f.grounded&&f.jumpRepeatDelay<=0&&(f.jumpBuffer>0||held.has('jump')))this.jump(f,false);
+    if(!held.has('guard')&&!held.has('down')&&!f.upAttackHold){
+      if(f.grounded&&f.jumpRepeatDelay<=0&&this.time>=f.jumpReadyAt&&(f.jumpBuffer>0||held.has('jump')))this.jump(f,false);
       else if(!f.grounded&&f.jumpBuffer>0&&f.airJumps>0&&f.jumpSince>.12)this.jump(f,true);
     }
     if(f.buffer&&!held.has('guard')){
@@ -313,7 +320,7 @@ export class Game {
     f.blinkCharges--;if(f.blinkRecharge<=0)f.blinkRecharge=MOVEMENT.blinkRecharge;
     f.blinkCooldown=f.blinkCharges>0?0:f.blinkRecharge;f.blinkBuffer=0;
     f.blinkTime=MOVEMENT.blinkDuration;f.invincible=.24;f.vx=direction*MOVEMENT.blinkSpeed;
-    f.stun=0;f.attack=null;f.buffer=null;f.reaction=null;f.tauntTime=0;f.dashTime=0;f.runDirection=0;f.stateTime=0;
+    f.stun=0;f.hitstunTime=0;f.attack=null;f.buffer=null;f.reaction=null;f.tauntTime=0;f.dashTime=0;f.runDirection=0;f.stateTime=0;f.aiStats.blinks++;
     opponent.combo=0;opponent.confirmedMoves=[];opponent.cancelTime=0;
     this.effect('airRing',f.x,f.y-90*S,f.character.accent,1,.3);this.emit('blink',{index:f.index});
   }
@@ -481,6 +488,7 @@ export class Game {
       this.effect('block',defender.x+defender.facing*34*S,hitY,'#b1e7e2',5);this.hitstop=.022;this.emit('block',{index:defender.index});return;
     }
     if(armored){defender.armorUsed=true;defender.flash=.12;this.effect('armor',defender.x,hitY,'#ffba64',1,.32);this.emit('armor',{index:defender.index});return;}
+    if(defender.stun<=0||defender.stunKind!=='hurt')defender.hitstunTime=0;
     defender.stun=config.stun;defender.stunKind='hurt';defender.state=defender.hp<=0?'ko':'hurt';defender.stateTime=0;defender.tauntTime=0;defender.attack=null;
     defender.dashTime=0;defender.runDirection=0;defender.flash=.1;defender.crouching=false;
     let reaction=config.launch?'launch':['sweep','slide','pulse'].includes(move)?'trip':['kick','diveKick','straight','rushPunch','rushSkill'].includes(move)?'body':isSuperMove(move)?'tumble':'flinch';

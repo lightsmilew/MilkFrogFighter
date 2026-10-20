@@ -22,12 +22,14 @@
       <span class="brand-type">奶蛙街头<small>MILKFROG FIGHT CLUB</small></span>
     </a>
     <span class="header-note">街角擂台 · 今日营业中 <i></i></span>
-    <nav aria-label="游戏工具">
-      <button class="text-button laugh-preview" id="laugh-preview" title="试听经典奶蛙笑声">笑一个 ♪</button>
-      <button class="text-button" id="help-button"><span aria-hidden="true">⌨</span> 操作手册</button>
-      <button class="icon-button" id="sound-button" aria-label="静音" aria-pressed="false" title="声音开关">♪</button>
-      <button class="icon-button" id="settings-button" aria-label="游戏设置" title="游戏设置">⚙</button>
+    <nav class="header-tools" aria-label="游戏工具">
+      <button class="header-tool" id="laugh-preview" aria-label="试听经典奶蛙笑声" title="试听经典奶蛙笑声"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M7 14c2 4 8 4 10 0M8 8h.01M16 8h.01"/></svg><span data-tool-label>笑声</span></button>
+      <button class="header-tool" id="help-button" aria-label="打开操作手册" title="打开操作手册"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h7c2 0 3 1 3 3v14c0-2-1-3-3-3H4zM14 6c1-2 3-2 6-2v14c-3 0-5 0-6 3"/></svg><span data-tool-label>招式本</span></button>
+      <button class="header-tool" id="sound-button" aria-label="静音" title="静音" aria-pressed="false"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9zM17 8c3 2 3 6 0 8M19 4c5 4 5 12 0 16"/></svg><span data-tool-label>声音</span></button>
+      <button class="header-tool" id="settings-button" aria-label="游戏设置" title="游戏设置"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1z"/><circle cx="12" cy="12" r="3"/></svg><span data-tool-label>设置</span></button>
+      <button class="header-tool header-share" id="share-button" aria-label="分享给朋友" title="分享给朋友"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3m-4 4 4-4 4 4M5 12v8h14v-8"/></svg><span data-tool-label>分享</span></button>
     </nav>
+    <span id="header-status" class="visually-hidden" role="status" aria-live="polite"></span>
   </header>
 
   <main class="page-shell">
@@ -43,7 +45,7 @@
           <button class="mode-tab" data-mode="local" aria-pressed="false"><span>02</span> 同屏双人</button>
           <button class="mode-tab" data-mode="practice" aria-pressed="false"><span>03</span> 自由练习</button>
         </div>
-        <div class="arcade-toolbar"><div class="toolbar-controls" id="screen-controls"><button id="pause-button" class="screen-button" aria-label="暂停游戏" title="暂停 Esc" hidden>Ⅱ</button><button id="fullscreen-button" class="screen-button" aria-label="切换全屏" title="全屏">⛶</button></div><label class="difficulty-label" for="difficulty">对手脾气 <select id="difficulty"><option value="easy">散步蛙 · 轻松</option><option value="normal" selected>认真蛙 · 标准</option><option value="hard">暴躁蛙 · 挑战</option></select></label></div>
+        <div class="arcade-toolbar"><div class="toolbar-controls" id="screen-controls"><button id="pause-button" class="screen-button" aria-label="暂停游戏" title="暂停 Esc" hidden>Ⅱ</button><button id="fullscreen-button" class="screen-button" aria-label="切换全屏" title="全屏">⛶</button></div><label class="difficulty-label" for="difficulty">对手脾气 <select id="difficulty"><option value="easy">散步蛙 · 轻松</option><option value="normal" selected>认真蛙 · 普通</option><option value="hard">暴躁蛙 · 挑战</option></select></label></div>
       </div>
 
       <div class="stage-picker" id="stage-picker"><span class="stage-picker-label">在哪里开打<small>二段跳上屋檐 · 闪移换身位</small></span><div class="stage-options" id="stage-options" role="group" aria-label="选择地图"></div></div>
@@ -93,8 +95,8 @@
       </div>
 
       <div class="touch-controls" id="touch-controls" aria-label="触屏操作" hidden>
-        <div class="joystick-wrap"><div id="joystick" class="joystick" role="group" aria-label="移动摇杆。左右拖动移动，推满奔跑，连续拨动冲刺，上推跳跃，下拉蹲下。"><span class="joystick-guide" aria-hidden="true"></span><span class="joystick-knob" aria-hidden="true"></span></div><small>推满跑 / 上推跳</small></div>
-        <div class="touch-actions"><div class="touch-defense-grid"><button data-action="blink" class="touch-blink" aria-label="闪移脱身">闪<small data-blink-label>E</small></button><button data-action="guard" class="touch-guard" aria-label="防御">挡</button></div><div class="touch-attack-grid"><button data-action="jab" aria-label="出拳">拳<small>J</small></button><button data-action="kick" aria-label="踢腿">脚<small>K</small></button><button data-action="uppercut" aria-label="升龙">升龙<small>U</small></button><button data-action="grab" aria-label="抱摔">抱摔<small>O</small></button><button data-action="special" aria-label="技能">技<small>20–35</small></button><button data-action="super" class="touch-super" aria-label="必杀">必杀<small>100</small></button></div></div>
+        <div class="joystick-wrap"><div id="joystick" class="joystick" role="group" aria-label="移动摇杆。左右拖动移动，推满奔跑，连续拨动冲刺，上推跳跃，下拉蹲下。"><span class="joystick-guide" aria-hidden="true"></span><span class="joystick-knob" aria-hidden="true"></span></div><small>推满跑 · 上推跳</small></div>
+        <div class="touch-actions"><div class="touch-defense-grid"><button data-action="blink" class="touch-blink" aria-label="闪移脱身">闪<small data-blink-label>2/2</small></button><button data-action="guard" class="touch-guard" aria-label="防御">挡<small>长按</small></button></div><div class="touch-attack-grid"><button data-action="jab" aria-label="拳。上加拳升龙，下加拳抱摔">拳<small>↑升 ↓摔</small></button><button data-action="kick" aria-label="踢腿。下加脚扫腿">脚<small>↓扫腿</small></button><button data-action="special" aria-label="技能">技<small>配方向</small></button><button data-action="super" class="touch-super" aria-label="必杀">必杀<small>100</small></button></div></div>
       </div>
     </section>
 
@@ -108,7 +110,7 @@
     <section class="quick-guide" aria-label="操作速查">
       <div class="guide-title"><span class="handwritten">喂，先看这个 ↗</span><h2>出招不难，<br>手感要练。</h2><button id="guide-help" class="underlined-button">翻翻完整招式本 →</button></div>
       <div class="guide-column"><span class="guide-number">01 / 走两步</span><div class="key-cluster"><kbd>A</kbd><kbd>D</kbd><span>双击冲刺</span><kbd>E</kbd><span>闪移</span></div><div class="key-cluster"><kbd>W</kbd><span>连跳 / 二段跳</span><kbd>S</kbd><span>下蹲</span></div><p>空中再按 W 二段跳，平台按住 S 跳下；空格防御。</p></div>
-      <div class="guide-column"><span class="guide-number">02 / 来两下</span><div class="key-cluster"><kbd>J</kbd><span>拳</span><kbd>K</kbd><span>脚</span><kbd>U</kbd><span>升龙</span></div><div class="key-cluster"><kbd>O</kbd><span>抱摔</span><kbd>L</kbd><span>技能</span></div><p>J J J 连击；J K / K J 分支追击，下 + K 扫腿。</p></div>
+      <div class="guide-column"><span class="guide-number">02 / 来两下</span><div class="key-cluster"><kbd>J</kbd><span>拳</span><kbd>K</kbd><span>脚</span><kbd>W + J</kbd><span>升龙</span></div><div class="key-cluster"><kbd>S + J</kbd><span>抱摔</span><kbd>L</kbd><span>技能</span></div><p>J J J 连击；J K / K J 分支追击，下 + K 扫腿。</p></div>
       <div class="guide-column"><span class="guide-number">03 / 别客气</span><div class="key-cluster"><kbd>I</kbd><span>配方向，切换组合必杀</span></div><div class="mini-meter"><span></span><span></span><span></span><span></span><b>MAX!</b></div><p>前 / 下 / 后 + I 各有奥义；后 + L 战术技能。</p></div>
     </section>
     <footer class="site-footer"><span>奶蛙街头 <small>小拳头，大脾气。</small></span><button id="credits-button">制作与素材 ↗</button></footer>
@@ -117,8 +119,8 @@
   <dialog id="help-dialog" class="paper-dialog" aria-labelledby="help-heading">
     <button class="dialog-close" data-close aria-label="关闭操作手册">×</button><span class="eyebrow">THE LITTLE BOOK OF BIG PUNCHES</span><h2 id="help-heading">街角招式本</h2><p class="dialog-intro">三局两胜。把对手的血条打空，或者在时间结束时保留更多体力。</p>
     <div class="help-players"><div><h3><span class="player-chip">P1</span> 一号选手</h3><dl><div><dt>移动 / 跳跃 / 下蹲</dt><dd><kbd>A</kbd><kbd>D</kbd> / <kbd>W</kbd> / <kbd>S</kbd></dd></div><div><dt>直拳 / 踢腿</dt><dd><kbd>J</kbd> / <kbd>K</kbd></dd></div><div><dt>技能 / 必杀</dt><dd><kbd>L</kbd> / <kbd>I</kbd></dd></div><div><dt>防御</dt><dd><kbd>SPACE</kbd> 或后退</dd></div></dl></div><div><h3><span class="player-chip p2">P2</span> 二号选手</h3><dl><div><dt>移动 / 跳跃 / 下蹲</dt><dd><kbd>←</kbd><kbd>→</kbd> / <kbd>↑</kbd> / <kbd>↓</kbd></dd></div><div><dt>直拳 / 踢腿</dt><dd><kbd>1</kbd> / <kbd>2</kbd></dd></div><div><dt>技能 / 必杀</dt><dd><kbd>3</kbd> / <kbd>4</kbd></dd></div><div><dt>防御</dt><dd><kbd>右 SHIFT</kbd> 或后退</dd></div></dl></div></div>
-    <p class="help-note">P1：U 升龙、O 抱摔、E 闪移；P2：6 / 7 / 8（或 /）。双击方向冲刺，继续按住奔跑，P1 也可左 Shift 加速。按住 W / ↑ 落地后连续跳，空中松开再按可以二段跳；平台按住 S / ↓ 可穿过下落。H 大笑（P2 按 5 或 B）。手柄 A/B/X/Y 出招，肩键防御，左右扳机升龙 / 抱摔，按下左摇杆闪移。</p>
-    <p class="help-note">手机：摇杆推满奔跑，同向连拨冲刺；持续上推会落地连跳，松开再上推可二段跳，平台下拉可跳下。右手“闪”可存两次、每 3 秒恢复一次，可穿过对手，也能在短暂受击后脱身。方向与攻击可同时按，前 / 下 / 后 + 必杀选择突进 / 升空 / 空袭奥义。前后相对角色朝向；P2 的 1/2/3/4/6/7 对应 J/K/L/I/U/O。</p>
+    <p class="help-note">P1：W + J 升龙、S + J 抱摔、E 闪移；P2：↑ + 1 升龙、↓ + 1 抱摔、8（或 /）闪移。双击方向冲刺，继续按住奔跑，P1 也可左 Shift 加速。按住 W / ↑ 落地后连续跳，空中松开再按可以二段跳；平台按住 S / ↓ 可穿过下落。H 大笑（P2 按 5 或 B）。手柄 A/B/X/Y 出招，肩键防御，上 / 下 + 拳为升龙 / 抱摔，按下左摇杆闪移。</p>
+    <p class="help-note">手机：右手只保留拳、脚、技、必杀、闪、挡六键，摇杆上 + 拳升龙、下 + 拳抱摔。摇杆推满奔跑，同向连拨冲刺；持续上推会落地连跳，松开再上推可二段跳，平台下拉可跳下。右手“闪”可存两次、每 3 秒恢复一次，可穿过对手，也能在短暂受击后脱身。方向与攻击可同时按，前 / 下 / 后 + 必杀选择突进 / 升空 / 空袭奥义。前后相对角色朝向；P2 的 1/2/3/4 对应 J/K/L/I，上 / 下 + 拳与 P1 相同。</p>
     <h3>连招与组合大招</h3><ul class="command-list" id="command-list"></ul>
     <h3>街坊传授的三件事</h3><ol class="fight-tips"><li><strong>命中，再接招。</strong>拳命中后接脚，脚命中后接技能，技能命中后能接必杀。三次连续命中后按中立必杀，会接该流派的连携终式。</li><li><strong>高低段要看清。</strong>下蹲避开直拳、高踢与高段气功；跳跃躲扫腿和震地。飞踢、空袭能压蹲下，升龙能打空中。低段要蹲防，空中压制要站防；抱摔可破防。</li><li><strong>练习场随便试。</strong>无限时间、无限奶气，木桩脱离连击后回满体力。点击底栏可切换木桩格挡。</li></ol>
     <div class="special-list" id="special-list"></div><p class="help-note">Esc / P 暂停。切换窗口会自动暂停。双人请使用键盘或两只手柄；单个触屏面板控制 P1。</p>
@@ -132,6 +134,12 @@
     <label class="setting-row" for="shake"><span>命中震屏<small>出拳更有分量</small></span><input type="checkbox" id="shake" checked></label>
     <label class="setting-row" for="touch-setting"><span>显示触屏按键<small>触屏设备默认开启</small></span><input type="checkbox" id="touch-setting"></label>
     <p class="help-note">设置和人机战绩只保存在当前浏览器。</p>
+  </dialog>
+
+  <dialog id="share-dialog" class="paper-dialog small-dialog" aria-labelledby="share-heading">
+    <button class="dialog-close" data-close aria-label="关闭分享">×</button><span class="eyebrow">MEET AT THE ARCADE</span><h2 id="share-heading">约朋友来一局。</h2>
+    <p>复制链接，发给朋友就能开玩。</p><label class="share-link-label" for="share-link">游戏链接</label><input id="share-link" class="share-link" type="url" readonly spellcheck="false">
+    <button id="copy-share-link" class="primary-button">复制链接 <span>↗</span></button><p id="share-status" class="help-note" role="status" aria-live="polite"></p>
   </dialog>
 
   <dialog id="credits-dialog" class="paper-dialog small-dialog" aria-labelledby="credits-heading">

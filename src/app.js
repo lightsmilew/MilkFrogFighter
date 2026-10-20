@@ -1,3 +1,4 @@
+import {shareGame,gameShareUrl} from './share.js';
 import {styleOf,moveFor} from './styles.js';
 import { CHARACTERS, COMMANDS, STAGES, stageById } from './config.js';
 import { Game } from './engine.js';
@@ -170,7 +171,7 @@ function applySettings() {
   $('touch-controls').hidden=!settings.touch;
   $('volume').value=settings.volume;$('volume-label').textContent=`${settings.volume}%`;
   $('music').checked=Boolean(settings.music);$('shake').checked=Boolean(settings.shake);$('touch-setting').checked=Boolean(settings.touch);
-  $('sound-button').textContent=settings.muted?'♩':'♪';
+  $('sound-button').querySelector('[data-tool-label]').textContent=settings.muted?'静音':'声音';
   $('sound-button').setAttribute('aria-pressed',String(settings.muted));
   $('sound-button').setAttribute('aria-label',settings.muted?'开启声音':'静音');
   $('sound-button').title=settings.muted?'开启声音':'静音';
@@ -201,6 +202,24 @@ $('help-button').addEventListener('click',()=>openDialog('help-dialog'));
 $('guide-help').addEventListener('click',()=>openDialog('help-dialog'));
 $('settings-button').addEventListener('click',()=>openDialog('settings-dialog'));
 $('credits-button').addEventListener('click',()=>openDialog('credits-dialog'));
+$('share-button').addEventListener('click',async()=>{
+  const result=await shareGame(location.href);
+  if(result.status==='cancelled')return;
+  if(result.status==='manual'){
+    $('share-link').value=result.url;openDialog('share-dialog');$('share-link').select();
+    $('share-status').textContent='长按链接或使用复制快捷键。';return;
+  }
+  $('header-status').textContent=result.status==='copied'?'游戏链接已复制，可以发给朋友。':'已打开系统分享。';
+  if(result.status==='copied'){
+    const label=$('share-button').querySelector('[data-tool-label]');label.textContent='已复制';setTimeout(()=>{label.textContent='分享';},2200);
+  }
+});
+$('copy-share-link').addEventListener('click',async()=>{
+  const link=$('share-link');link.value=gameShareUrl(location.href);
+  try{await navigator.clipboard.writeText(link.value);$('share-status').textContent='链接已复制，发给朋友吧。';}
+  catch{link.focus();link.select();$('share-status').textContent='链接已选中，长按或使用复制快捷键。';}
+});
+
 $('sound-button').addEventListener('click',()=>{
   settings.muted=!settings.muted;applySettings();
   audio.unlock().then(()=>{audio.sfx('select');if(state.active&&!state.paused)audio.setActive(true);});

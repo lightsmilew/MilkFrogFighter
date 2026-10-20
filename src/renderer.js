@@ -228,7 +228,7 @@ export class Renderer {
     if(fighter.state==='dash'||fighter.state==='blink')return 19;
     if(fighter.crouching)return 12;
     if(fighter.state==='walk')return Math.floor(fighter.stateTime*9)%2?1:2;
-    return 20;
+    return 0;
   }
 
   drawFighter(ctx,fighter,time,{size=WORLD.spriteSize,pose=null}={}) {

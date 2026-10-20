@@ -82,7 +82,7 @@ try{
   await page.waitForTimeout(900);
   // Exercise the expanded command set through keyboard input, not direct calls.
   const advanced=[];
-  for(const [held,key,move] of [['KeyS','KeyJ','lowJab'],['KeyS','KeyK','sweep'],['KeyS','KeyL','pulse'],[null,'KeyU','uppercut'],[null,'KeyO','grab'],['KeyD','KeyI','superRush'],['KeyS','KeyI','superRise'],['KeyA','KeyI','superStorm']]){
+  for(const [held,key,move] of [['KeyS','KeyJ','grab'],['KeyS','KeyK','sweep'],['KeyS','KeyL','pulse'],['KeyW','KeyJ','uppercut'],[null,'KeyO','grab'],['KeyD','KeyI','superRush'],['KeyS','KeyI','superRise'],['KeyA','KeyI','superStorm']]){
     await resetPractice(page);
     if(held)await page.keyboard.down(held);
     await page.keyboard.press(key);
@@ -136,8 +136,8 @@ try{
   report.push({check:'throw catch, arc, opposite-side landing and recovery'});
   await resetPractice(page);
   await page.evaluate(async()=>{const {game}=await import('./src/app.js');window.__jumps=0;const previous=game.onEvent;game.onEvent=e=>{previous(e);if(e.type==='jump'&&e.index===0)window.__jumps++;};});
-  await page.keyboard.down('KeyW');await page.waitForTimeout(2300);await page.keyboard.up('KeyW');assert.ok((await state(page)).jumps>=2);
-  await waitState(page,s=>s.y[0]<600&&s.jumpSince>.15&&s.airJumps===1);
+  await page.keyboard.down('KeyW');await page.waitForTimeout(2300);assert.ok((await state(page)).jumps>=2);
+  await waitState(page,s=>!s.grounded[0]&&s.jumpSince>.15&&s.jumpSince<.4&&s.airJumps===1);await page.keyboard.up('KeyW');await page.waitForTimeout(40);
   await page.keyboard.press('KeyW');await waitState(page,s=>s.airJumps===0);
   await resetPractice(page);
   await page.evaluate(async()=>{const {game}=await import('./src/app.js');game.fighters[0].x=2800;game.fighters[1].x=3100;});
@@ -214,18 +214,26 @@ try{
   await mobile.screenshot({path:'artifacts/fight-mobile.png',fullPage:true});
   report.push({check:'mobile pointer controls',...await state(mobile)});
   await assertPauseFits(mobile,'portrait-390');
-  for(const [action,move] of [['uppercut','uppercut'],['grab','grab']]){
-    await resetPractice(mobile);await mobile.locator(`[data-action="${action}"]`).tap();
-    await waitState(mobile,s=>s.lastMoves[0]===move);
+  for(const [direction,move] of [['up','uppercut'],['down','grab']]){
+    await resetPractice(mobile);
+    const stick=await mobile.locator('#joystick').boundingBox(),punch=await mobile.locator('[data-action="jab"]').boundingBox();
+    const directionFinger={id:11,x:stick.x+stick.width/2,y:stick.y+stick.height*(direction==='up'?.15:.85),radiusX:5,radiusY:5};
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[directionFinger]});await mobile.waitForTimeout(30);
+    const punchFinger={id:12,x:punch.x+punch.width/2,y:punch.y+punch.height/2,radiusX:5,radiusY:5};
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[directionFinger,punchFinger]});
+    await waitState(mobile,s=>s.lastMoves[0]===move);await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   }
+  assert.equal(await mobile.locator('.touch-actions button').count(),6);
+  assert.equal(await mobile.locator('[data-action="uppercut"],[data-action="grab"]').count(),0);
   await resetPractice(mobile);
   await mobile.evaluate(async()=>{const {game}=await import('./src/app.js');window.__jumps=0;const previous=game.onEvent;game.onEvent=e=>{previous(e);if(e.type==='jump'&&e.index===0)window.__jumps++;};});
   const jumpStick=await mobile.locator('#joystick').boundingBox();
   const upFinger={id:7,x:jumpStick.x+jumpStick.width/2,y:jumpStick.y+jumpStick.height*.15,radiusX:5,radiusY:5};
   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[upFinger]});await mobile.waitForTimeout(2300);
   assert.ok((await state(mobile)).jumps>=2);
+  await waitState(mobile,s=>!s.grounded[0]&&s.jumpSince>.15&&s.jumpSince<.4&&s.airJumps===1);
   upFinger.y=jumpStick.y+jumpStick.height/2;await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[upFinger]});
-  await waitState(mobile,s=>s.y[0]<600&&s.jumpSince>.15&&s.airJumps===1);
+  await mobile.waitForTimeout(40);
   upFinger.y=jumpStick.y+jumpStick.height*.15;await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[upFinger]});
   await waitState(mobile,s=>s.airJumps===0);await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   await resetPractice(mobile);await mobile.locator('[data-action="blink"]').tap();await waitState(mobile,s=>s.moves[0]==='blink');
@@ -255,7 +263,7 @@ try{
   const bounds=await mobile.evaluate(()=>{
     const buttons=[...document.querySelectorAll('.touch-actions button')].map(e=>e.getBoundingClientRect());
     const tools=[...document.querySelectorAll('.toolbar-controls button')].filter(e=>!e.hidden).map(e=>e.getBoundingClientRect());
-    return {inside:buttons.every(b=>b.left>=0&&b.right<=innerWidth&&b.bottom<=innerHeight),overlap:buttons.some(a=>tools.some(b=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top))};
+    return {inside:buttons.every(b=>b.left>=0&&b.right<=innerWidth&&b.bottom<=innerHeight&&b.width>=44&&b.height>=44),overlap:buttons.some(a=>tools.some(b=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top))};
   });
   assert.ok(bounds.inside);assert.equal(bounds.overlap,false);
   await assertPauseFits(mobile,'landscape-844');

@@ -24,3 +24,8 @@ iPhone Safari 对任意 HTML 元素的 Fullscreen API 支持存在限制，不�
 ## 验证范围
 
 本机 Edge 真实验证原生全屏；分别模拟接口不存在和 Promise 拒绝，验证沉浸回退、窗口尺寸及退出。触屏横屏也验证了无 Fullscreen API 的回退路径。未使用 iPhone 真机、Safari 或夸克真机运行，不能将这部分模拟验证表述为真机认证。
+
+
+## 分享
+
+顶部分享由点击直接触发，优先使用 [Navigator.share](https://developer.mozilla.org/en-US/docs/Web/API/Navigator/share)，用户取消时结束操作。接口缺失或失败则尝试 [Clipboard.writeText](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/writeText)，剪贴板不可用时显示可选中的链接。浏览器验证覆盖三条路径，未将模拟的系统分享认定为 iPhone 真机测试。

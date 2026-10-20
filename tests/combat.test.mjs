@@ -42,15 +42,15 @@ test('moving backward automatically guards a frontal hit',()=>{
   assert.ok(b.hp>98);assert.ok(events.some(event=>event.type==='block'));
 });
 
-test('crouching avoids a high jab but a crouched jab can hit low',()=>{
+test('crouching avoids a high jab but down plus punch grabs a crouched opponent',()=>{
   const {game,b}=arena();press(game,0,'jab',[[],['down']]);advance(game,.6,[[],['down']]);assert.equal(b.hp,100);
-  game.fighters[0].x=500;b.x=500+130*WORLD.fighterScale;
-  press(game,0,'jab',[['down'],['down']]);advance(game,.4,[['down'],['down']]);assert.ok(b.hp<100);
+  game.fighters[0].x=500;b.x=500+WORLD.pushDistance;
+  press(game,0,'jab',[['down'],['down']]);advance(game,1.1,[['down'],['down']]);assert.ok(b.hp<100);
 });
 
 test('jumping uses gravity, permits one air jump, and then lands exactly',()=>{
   const {game,a}=arena();press(game,0,'jump');advance(game,.15);assert.ok(a.y<WORLD.floor);
-  press(game,0,'jump');assert.equal(a.airJumps,0);assert.ok(a.vy< -700);
+  press(game,0,'jump');advance(game,.08);assert.equal(a.airJumps,0);assert.ok(a.vy< -700);
   advance(game,.2);const airborneVelocity=a.vy;press(game,0,'jump');assert.ok(a.vy>airborneVelocity);
   advance(game,1.5);assert.equal(a.y,WORLD.floor);assert.equal(a.vy,0);
 });

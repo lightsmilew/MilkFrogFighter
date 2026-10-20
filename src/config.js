@@ -47,7 +47,7 @@ const MOVE_DATA = {
   grab: { name:'大肚抱摔', startup:.11, active:.11, recovery:.36, damage:15, reach:116, top:155, bottom:10, level:'throw', stun:.55, push:345, launch:380, meter:12, rank:0 },
   spin: { name:'旋风腿', startup:.13, active:.30, recovery:.27, damage:9, reach:163, top:190, bottom:55, level:'mid', stun:.27, push:60, meter:4, cost:20, hits:2, interval:.16, rank:3 },
   special: { name:'专属技能', startup:.20, active:.12, recovery:.29, damage:15, reach:165, level:'high', stun:.34, push:185, cost:25, meter:5, rank:4, projectile:true },
-  powerWave: { name:'螺旋螺旋奶丸', startup:.22, active:.13, recovery:.30, damage:21, reach:180, level:'high', stun:.41, push:210, cost:35, meter:6, rank:4, projectile:true },
+  powerWave: { name:'强化流派技能', startup:.22, active:.13, recovery:.30, damage:21, reach:180, level:'high', stun:.41, push:210, cost:35, meter:6, rank:4, projectile:true },
   pulse: { name:'伏地奶气震', startup:.19, active:.13, recovery:.28, damage:13, reach:185, top:48, bottom:0, level:'low', posture:'crouch', stun:.42, push:180, cost:20, meter:5, rank:4 },
   rushSkill: { name:'破风掌', startup:.12, active:.23, recovery:.28, damage:18, reach:150, top:177, bottom:55, level:'mid', stun:.4, push:230, cost:30, meter:5, rank:4, drive:790 },
   airWave: { name:'空中散气', startup:.16, active:.12, recovery:.24, damage:11, reach:170, level:'overhead', stun:.32, push:170, cost:20, meter:4, rank:4, projectile:true },
@@ -70,12 +70,12 @@ export const COMMANDS = Object.freeze([
   {keys:'平台上按住下',name:'穿过平台',detail:'按住下约 0.2 秒即可跳下棚架或屋檐，地面不受影响。'},
   { keys:'J → J → J', name:'流派三连击', detail:'每位角色各有三段普攻，命中后依次衔接；第三下可换 K 接不同的终结技。' },
   { keys:'J → K → L → I', name:'流派连携终式', detail:'连续命中后按必杀，接各自的多段终式；本连招的技能消耗计入 100 奶气总额。' },
-  { keys:'下 + J / 下 + K', name:'蹲拳 / 扫堂腿', detail:'蹲下躲高段；扫腿打下盘，站防挡不住。' },
+  { keys:'上 + J / 下 + J / 下 + K', name:'升龙 / 抱摔 / 扫堂腿', detail:'上拳对空、下拳抱摔破防；下脚扫腿打下盘。键盘、摇杆与手柄使用同一规则。' },
   { keys:'跳跃 + J / K / L', name:'空中拳 / 飞燕踢 / 空中散气', detail:'空中出招；飞燕踢与散气能压蹲下的对手。' },
-  { keys:'U / O / K + L', name:'升龙 / 抱摔 / 旋风腿', detail:'升龙对空，抱摔破防，旋风腿两段命中。' },
+  { keys:'K + L', name:'流派旋风腿', detail:'脚与技能同时按，发动各流派的旋转追击。' },
   { keys:'冲刺中 J / K', name:'冲肩拳 / 滑铲', detail:'双击方向先冲刺，再出拳或铲腿。' },
   { keys:'下 + L / 前 + L', name:'伏地奶气震 / 破风掌', detail:'低段震地或向前突进，分别消耗 20 / 30 奶气。' },
-  { keys:'↓ → 前 → L', name:'螺旋螺旋奶丸', detail:'半秒内依次输入，强化气功消耗 35 奶气。' },
+  { keys:'↓ → 前 → L', name:'强化流派技能', detail:'半秒内依次输入，强化气功消耗 35 奶气。' },
   { keys:'I', name:'专属必杀', detail:'每只蛙独有的招牌必杀，消耗 100 奶气。' },
   { keys:'前 + I / K + I', name:'流派突进奥义', detail:'各流派独有的冲锋、多段、幻步或印记追击，消耗 100 奶气。' },
   { keys:'下 + I / U + I', name:'流派升空奥义', detail:'风轮、炎柱、月井、花雨、冰龙等独立效果，消耗 100 奶气。' },
@@ -83,9 +83,9 @@ export const COMMANDS = Object.freeze([
 ]);
 
 export const DIFFICULTIES = Object.freeze({
-  easy: { name: '散步蛙', reaction:.30,aggression:.68,block:.22,accuracy:.65,combo:.50,escape:.25 },
-  normal: { name: '认真蛙', reaction:.16,aggression:.92,block:.62,accuracy:.88,combo:.90,escape:.65 },
-  hard: { name: '暴躁蛙', reaction:.095,aggression:.99,block:.82,accuracy:.97,combo:.99,escape:.88 },
+  easy: {name:'散步蛙',reaction:.38,aggression:.48,block:.16,accuracy:.45,combo:.28,confirmDelay:.20,chainLimit:2,recoveryGap:.62,escape:.25,escapeCombo:3,escapeReaction:.20,dodgeReaction:.26,blinkPause:2.0,chaseBlink:0,punish:.25,skills:.25,ultimate:.18,tactics:.08,run:false},
+  normal: {name:'认真蛙',reaction:.21,aggression:.77,block:.44,accuracy:.74,combo:.68,confirmDelay:.10,chainLimit:4,recoveryGap:.14,escape:.62,escapeCombo:2,escapeReaction:.12,dodgeReaction:.15,blinkPause:1.0,chaseBlink:.10,punish:.55,skills:.65,ultimate:.38,tactics:.30,run:true},
+  hard: {name:'暴躁蛙',reaction:.10,aggression:.96,block:.78,accuracy:.95,combo:.96,confirmDelay:.045,chainLimit:7,recoveryGap:.055,escape:.92,escapeCombo:1,escapeReaction:.105,dodgeReaction:.075,blinkPause:.42,chaseBlink:.45,punish:.95,skills:.90,ultimate:.78,tactics:.72,run:true},
 });
 
 export const KEYMAPS = Object.freeze([

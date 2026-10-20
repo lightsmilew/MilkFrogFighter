@@ -98,7 +98,7 @@ test('close throw breaks guard but cannot grab an airborne opponent',()=>{
 test('directional commands mirror with facing and motion history expires',()=>{
   for(const facing of [1,-1]){
     const {game,a}=arena();a.facing=facing;const forward=facing===1?'right':'left',back=facing===1?'left':'right';
-    for(const [raw,held,want] of [['jab',['down'],'lowJab'],['kick',['down'],'sweep'],['special',['down'],'pulse'],['special',[forward],'rushSkill'],['super',[forward],'superRush'],['super',['down'],'superRise'],['super',[back],'superStorm'],['special',['kick'],'spin']]){
+    for(const [raw,held,want] of [['jab',['down'],'grab'],['jab',['jump'],'uppercut'],['kick',['down'],'sweep'],['special',['down'],'pulse'],['special',[forward],'rushSkill'],['super',[forward],'superRush'],['super',['down'],'superRise'],['super',[back],'superStorm'],['special',['kick'],'spin']]){
       assert.equal(game.chooseMove(a,raw,new Set(held)),want);
     }
     a.history=[{direction:'down',time:game.time-.2},{direction:'forward',time:game.time-.1}];

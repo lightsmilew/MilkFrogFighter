@@ -17,7 +17,7 @@ export const STYLES=Object.freeze({
   },
   red:{name:'熔火流',theme:'fire',colors:['#fff5bb','#ffab4e','#e54c35'],range:120,
     mechanic:'慢启动重拳带短暂霸体，火柱延迟爆发，烈焰蓄势能扛住一次轻击。',
-    route:['lowJab','branch','rushSkill','super'],recipe:'下 J → K → 前 L → I',
+    route:['jab','jab2','ender','rushSkill','super'],recipe:'J → J → K → 前 L → I',
     names:['崩岩拳','锻火肘','熔岩重锤','烈焰摆腿','碎岩掌','熔地扫','空坠锤','陨火踢','炉心冲撞','火犁滑','爆炎升龙','火山背摔','熔火回轮','地走炎','炎龙吐息','三重火柱','爆燃冲拳','火雨散弹','火山大喷发','熔炉连轰','冲天炎柱','陨火天降','熔火·碎岳','裂地锤','熔岩膝','烈焰蓄势','爆炎砸地'],
     overrides:{jab:{startup:.105,damage:10,armor:.18,reach:135},jab2:{damage:9,armor:.18,drive:200},straight:{damage:15,startup:.17,armor:.25,launch:400},kick:{damage:15,startup:.19,armor:.2},branch:{damage:13,armor:.24,launch:290},ender:{damage:17,startup:.18,armor:.25,launch:450},uppercut:{damage:18,lift:620,launch:760,armor:.25},grab:{throwArc:270,throwDistance:190,throwDuration:.8,damage:19},special:{pattern:'fireGround'},powerWave:{pattern:'fireBreath',level:'mid'},pulse:{posture:null,projectile:true,pattern:'eruption',active:.40,hits:3,interval:.15},stance:{projectile:true,pattern:'fireGuard',armor:.65,counter:false},rushSkill:{drive:650,armor:.35,damage:21},super:{pattern:'volcano',active:.8,hits:5,interval:.16,damage:10},superRush:{hits:3,interval:.2,active:.62,damage:14,armor:.65,drive:610},superRise:{armor:.6,damage:15},superStorm:{pattern:'fireRain'},superFinish:{armor:.8,hits:4,interval:.17,active:.7,damage:13,launch:300}},
   },
