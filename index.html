@@ -9,7 +9,10 @@
   <meta name="description" content="奶蛙街头：一肚子奶气，一身好功夫。经典奶蛙表情包的街机格斗场，支持人机、同屏双人、练习与触屏操作。">
   <title>奶蛙街头 · MILKFROG FIGHT CLUB</title>
   <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
-  <link rel="preload" href="./assets/milk-street.webp" as="image">
+  <link rel="preload" href="./assets/fighters/classic.webp" as="image" fetchpriority="high">
+  <link rel="preload" href="./assets/fighters/green.webp" as="image" fetchpriority="high">
+  <link rel="modulepreload" href="./src/engine.js">
+  <link rel="modulepreload" href="./src/renderer.js">
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
@@ -99,13 +102,14 @@
       <div class="section-heading"><div><span class="eyebrow">PICK YOUR FROG</span><h2 id="roster-heading">今天，你是哪只蛙？</h2></div><div class="player-selector" role="group" aria-label="选择为哪位玩家更换角色"><button class="active" data-player="0" aria-pressed="true">P1 选手</button><button data-player="1" aria-pressed="false" id="p2-select-label">CPU 对手</button></div></div>
       <div class="roster-grid" id="roster"></div>
       <p class="roster-hint" id="roster-hint">点选喜欢的口味，开打之后就别后悔。<span>同一只蛙，也可以互相切磋。</span></p>
+      <div class="fighter-notes" id="fighter-notes" aria-live="polite"></div>
     </section>
 
     <section class="quick-guide" aria-label="操作速查">
       <div class="guide-title"><span class="handwritten">喂，先看这个 ↗</span><h2>出招不难，<br>手感要练。</h2><button id="guide-help" class="underlined-button">翻翻完整招式本 →</button></div>
       <div class="guide-column"><span class="guide-number">01 / 走两步</span><div class="key-cluster"><kbd>A</kbd><kbd>D</kbd><span>双击冲刺</span><kbd>E</kbd><span>闪移</span></div><div class="key-cluster"><kbd>W</kbd><span>连跳 / 二段跳</span><kbd>S</kbd><span>下蹲</span></div><p>空中再按 W 二段跳，平台按住 S 跳下；空格防御。</p></div>
-      <div class="guide-column"><span class="guide-number">02 / 来两下</span><div class="key-cluster"><kbd>J</kbd><span>拳</span><kbd>K</kbd><span>脚</span><kbd>U</kbd><span>升龙</span></div><div class="key-cluster"><kbd>O</kbd><span>抱摔</span><kbd>L</kbd><span>技能</span></div><p>J → J → J 三连拳；下 + K 扫堂腿。</p></div>
-      <div class="guide-column"><span class="guide-number">03 / 别客气</span><div class="key-cluster"><kbd>I</kbd><span>配方向，切换组合必杀</span></div><div class="mini-meter"><span></span><span></span><span></span><span></span><b>MAX!</b></div><p>前 + I 百裂拳 · 下 + I 升龙 · 后 + I 空袭。</p></div>
+      <div class="guide-column"><span class="guide-number">02 / 来两下</span><div class="key-cluster"><kbd>J</kbd><span>拳</span><kbd>K</kbd><span>脚</span><kbd>U</kbd><span>升龙</span></div><div class="key-cluster"><kbd>O</kbd><span>抱摔</span><kbd>L</kbd><span>技能</span></div><p>J J J 连击；J K / K J 分支追击，下 + K 扫腿。</p></div>
+      <div class="guide-column"><span class="guide-number">03 / 别客气</span><div class="key-cluster"><kbd>I</kbd><span>配方向，切换组合必杀</span></div><div class="mini-meter"><span></span><span></span><span></span><span></span><b>MAX!</b></div><p>前 / 下 / 后 + I 各有奥义；后 + L 战术技能。</p></div>
     </section>
     <footer class="site-footer"><span>奶蛙街头 <small>小拳头，大脾气。</small></span><button id="credits-button">制作与素材 ↗</button></footer>
   </main>
@@ -114,9 +118,9 @@
     <button class="dialog-close" data-close aria-label="关闭操作手册">×</button><span class="eyebrow">THE LITTLE BOOK OF BIG PUNCHES</span><h2 id="help-heading">街角招式本</h2><p class="dialog-intro">三局两胜。把对手的血条打空，或者在时间结束时保留更多体力。</p>
     <div class="help-players"><div><h3><span class="player-chip">P1</span> 一号选手</h3><dl><div><dt>移动 / 跳跃 / 下蹲</dt><dd><kbd>A</kbd><kbd>D</kbd> / <kbd>W</kbd> / <kbd>S</kbd></dd></div><div><dt>直拳 / 踢腿</dt><dd><kbd>J</kbd> / <kbd>K</kbd></dd></div><div><dt>技能 / 必杀</dt><dd><kbd>L</kbd> / <kbd>I</kbd></dd></div><div><dt>防御</dt><dd><kbd>SPACE</kbd> 或后退</dd></div></dl></div><div><h3><span class="player-chip p2">P2</span> 二号选手</h3><dl><div><dt>移动 / 跳跃 / 下蹲</dt><dd><kbd>←</kbd><kbd>→</kbd> / <kbd>↑</kbd> / <kbd>↓</kbd></dd></div><div><dt>直拳 / 踢腿</dt><dd><kbd>1</kbd> / <kbd>2</kbd></dd></div><div><dt>技能 / 必杀</dt><dd><kbd>3</kbd> / <kbd>4</kbd></dd></div><div><dt>防御</dt><dd><kbd>右 SHIFT</kbd> 或后退</dd></div></dl></div></div>
     <p class="help-note">P1：U 升龙、O 抱摔、E 闪移；P2：6 / 7 / 8（或 /）。双击方向冲刺，继续按住奔跑，P1 也可左 Shift 加速。按住 W / ↑ 落地后连续跳，空中松开再按可以二段跳；平台按住 S / ↓ 可穿过下落。H 大笑（P2 按 5 或 B）。手柄 A/B/X/Y 出招，肩键防御，左右扳机升龙 / 抱摔，按下左摇杆闪移。</p>
-    <p class="help-note">手机：摇杆推满奔跑，同向连拨冲刺；持续上推会落地连跳，松开再上推可二段跳，平台下拉可跳下。右手“闪”可存两次、每 2.5 秒恢复一次，可穿过对手，也能在短暂受击后脱身。方向与攻击可同时按，前 / 下 / 后 + 必杀选择百裂拳 / 升龙 / 空袭。前后相对角色朝向；P2 的 1/2/3/4/6/7 对应 J/K/L/I/U/O。</p>
+    <p class="help-note">手机：摇杆推满奔跑，同向连拨冲刺；持续上推会落地连跳，松开再上推可二段跳，平台下拉可跳下。右手“闪”可存两次、每 3 秒恢复一次，可穿过对手，也能在短暂受击后脱身。方向与攻击可同时按，前 / 下 / 后 + 必杀选择突进 / 升空 / 空袭奥义。前后相对角色朝向；P2 的 1/2/3/4/6/7 对应 J/K/L/I/U/O。</p>
     <h3>连招与组合大招</h3><ul class="command-list" id="command-list"></ul>
-    <h3>街坊传授的三件事</h3><ol class="fight-tips"><li><strong>命中，再接招。</strong>拳命中后接脚，脚命中后接技能，技能命中后能接必杀。三次连续命中后按中立必杀，会接六段终式。</li><li><strong>高低段要看清。</strong>下蹲避开直拳、高踢与高段气功；跳跃躲扫腿和震地。飞踢、空袭能压蹲下，升龙能打空中。低段要蹲防，空中压制要站防；抱摔可破防。</li><li><strong>练习场随便试。</strong>无限时间、无限奶气，木桩脱离连击后回满体力。点击底栏可切换木桩格挡。</li></ol>
+    <h3>街坊传授的三件事</h3><ol class="fight-tips"><li><strong>命中，再接招。</strong>拳命中后接脚，脚命中后接技能，技能命中后能接必杀。三次连续命中后按中立必杀，会接该流派的连携终式。</li><li><strong>高低段要看清。</strong>下蹲避开直拳、高踢与高段气功；跳跃躲扫腿和震地。飞踢、空袭能压蹲下，升龙能打空中。低段要蹲防，空中压制要站防；抱摔可破防。</li><li><strong>练习场随便试。</strong>无限时间、无限奶气，木桩脱离连击后回满体力。点击底栏可切换木桩格挡。</li></ol>
     <div class="special-list" id="special-list"></div><p class="help-note">Esc / P 暂停。切换窗口会自动暂停。双人请使用键盘或两只手柄；单个触屏面板控制 P1。</p>
   </dialog>
 

@@ -107,11 +107,11 @@ try{
     const frames=renderer.frames,laugh=frames[11];
     const ctx=laugh.canvas.getContext('2d');
     let leftPixels=0;const pixels=ctx.getImageData(0,0,laugh.canvas.width,laugh.canvas.height);
-    for(let y=0;y<pixels.height;y++)for(let x=0;x<55;x++)if(pixels.data[(y*pixels.width+x)*4+3]>48)leftPixels++;
-    const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=720;
-    const draw=canvas.getContext('2d');draw.fillStyle='#ebe6d5';draw.fillRect(0,0,1200,720);
+    for(let y=0;y<pixels.height;y++)for(let x=0;x<laugh.bounds.left-2;x++)if(pixels.data[(y*pixels.width+x)*4+3]>48)leftPixels++;
+    const canvas=document.createElement('canvas');canvas.width=1440;canvas.height=720;
+    const draw=canvas.getContext('2d');draw.fillStyle='#ebe6d5';draw.fillRect(0,0,1440,720);
     for(let i=0;i<frames.length;i++){
-      const f=frames[i],x=i%5*240,y=Math.floor(i/5)*180;
+      const f=frames[i],x=i%6*240,y=Math.floor(i/6)*180;
       draw.drawImage(f.canvas,x+30,y+5,170,170);draw.fillStyle='#263d34';draw.font='13px monospace';draw.fillText(`FRAME ${i}`,x+10,y+19);
     }
     const tags=[],original=draw.fillText.bind(draw);draw.fillText=(label,...args)=>{tags.push(label);original(label,...args);};
@@ -125,10 +125,10 @@ try{
     renderer.drawPlayerTag(badge,{index:0,x:65,y:WORLD.standHeight+45,crouching:false,downTime:0,slow:0,charm:0},{mode:'ai',camera:{scale:1}});
     return {count:frames.length,leftPixels,bounds:laugh.bounds,tags,badgeCornerAlpha:badge.getImageData(30,4,1,1).data[3],rainMoves:first!==second,preview:canvas.toDataURL('image/png').split(',')[1]};
   });
-  assert.equal(atlas.count,20);assert.equal(atlas.leftPixels,0);
+  assert.equal(atlas.count,24);assert.equal(atlas.leftPixels,0);
   assert.deepEqual(atlas.tags,['P2 · 电脑','P2 · 玩家','P2 · 木桩','P1 · 玩家']);assert.ok(atlas.rainMoves);assert.equal(atlas.badgeCornerAlpha,0);
   await writeFile('artifacts/isolated-frames.png',Buffer.from(atlas.preview,'base64'));
-  report.push({check:'20 isolated animation frames; laugh has no detached foot',bounds:atlas.bounds});
+  report.push({check:'24 prepacked animation frames per fighter; laugh has no detached foot',bounds:atlas.bounds});
   await resetPractice(page);
   await page.keyboard.press('KeyO');await waitState(page,s=>s.grapples===1);await page.waitForTimeout(230);
   await page.locator('#game-screen').screenshot({path:'artifacts/throw-arc.png'});

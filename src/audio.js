@@ -120,7 +120,15 @@ export class ArcadeAudio {
       case 'doubleJump': this.tone(340,.13,'sine',.1,0,740);break;
       case 'catch': this.noise(.08,.14,700);this.tone(125,.15,'triangle',.17,0,65);break;
       case 'slam': this.noise(.23,.33,350);this.tone(75,.28,'sine',.3,0,28);break;
-      case 'skill': this.tone(390,.17,'sine',.1,0,780); this.noise(.12,.07,3200); break;
+      case 'skill': {
+        const voices={spiral:[260,900,'sine',2000],wind:[720,1600,'triangle',4300],fire:[85,220,'sawtooth',600],void:[170,510,'sine',1700],ribbon:[660,1040,'sine',5000],ice:[1200,1800,'triangle',6200]};
+        const [low,high,wave,noise]=voices[detail.theme]||voices.spiral;
+        this.tone(low,.23,wave,.1,0,high);this.noise(detail.theme==='fire'?.25:.12,.075,noise);
+        if(detail.theme==='ice'||detail.theme==='ribbon')this.tone(high*1.5,.16,'sine',.055,now+.07);break;
+      }
+      case 'counter':this.tone(1500,.14,'triangle',.13,0,330);this.noise(.08,.2,3000);break;
+      case 'armor':this.tone(110,.2,'triangle',.17,0,70);this.noise(.1,.16,800);break;
+      case 'bloom':this.tone(880,.2,'sine',.1,0,1400);this.tone(1320,.2,'sine',.07,now+.06);break;
       case 'hit': this.noise(.11, .36, 550); this.tone(['kick','sweep','grab','diveKick'].includes(detail.move) ? 85 : 145, .18, 'triangle', .36, 0, 35); this.tone(950,.035,'square',.055); break;
       case 'block': this.tone(480, .07, 'square', .09, 0, 170); this.noise(.035, .1, 4000); break;
       case 'jump': this.tone(175, .09, 'sine', .08, 0, 330); break;

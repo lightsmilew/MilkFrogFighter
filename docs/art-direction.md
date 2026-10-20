@@ -4,7 +4,7 @@
 
 扩展晴天街区和雨天版本的原始提示词另存于 [stage-prompts.md](stage-prompts.md)，两张新地图沿用同一街区与绘画风格。
 
-## 最终文件
+## 素材文件（运行版本以 fighters/ 为准）
 
 | 用途 | 文件 |
 | --- | --- |
@@ -63,3 +63,9 @@ gutters and all hands and feet within their cells. Crouched silhouettes should
 sit lower than standing poses. No shadows, background, effects, labels or text.
 ```
 
+
+## 六流派动作与统一配色
+
+本轮以原经典参考和已有游戏图集生成 6 列 × 4 行的全新动作图。每位角色拥有不同的架势、轻击、重击和施法姿态；完整提示词、内置工具与输出路径见 [action-prompts.md](action-prompts.md)。
+
+旧图保留为原始归档，运行时改用 `assets/fighters/*.webp`。每位角色的旧二十姿态按新图肤色提取五档明暗进行校准，默认奶蛙的黄色同样校准。绿色眼睛、奶白肚皮与灰褐手脚不参与肤色映射；离线打包后新旧动作共用同一组图集与锚点。首页使用小型正式头像图，不用简化向量绘图代替未加载角色。

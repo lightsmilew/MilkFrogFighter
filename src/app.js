@@ -1,3 +1,4 @@
+import {styleOf,moveFor} from './styles.js';
 import { CHARACTERS, COMMANDS, STAGES, stageById } from './config.js';
 import { Game } from './engine.js';
 import { Renderer } from './renderer.js';
@@ -58,15 +59,16 @@ function renderRoster() {
   $('roster').innerHTML = CHARACTERS.map((character,index) => `
     <button class="fighter-card ${state.p1===character.id?'selected-p1':''} ${state.p2===character.id?'selected-p2':''}" data-character="${character.id}" aria-label="选择${character.name}。${character.description}" aria-pressed="${(state.player===0?state.p1:state.p2)===character.id}" ${state.active||game.phase==='matchOver'?'disabled':''}>
       <canvas class="fighter-portrait" width="320" height="340" data-portrait="${character.id}" aria-hidden="true"></canvas>
-      <div class="fighter-info"><span class="fighter-number">0${index+1} / ${['BALANCED','RUSH DOWN','POWER','CONTROL','CHARM','FROST'][index]}</span><h3>${character.name}</h3><p class="fighter-tagline">${character.title}</p><span class="fighter-skill">招牌 · ${character.specialName} ↗</span></div>
+      <div class="fighter-info"><span class="fighter-number">0${index+1} / ${['BALANCED','RUSH DOWN','POWER','CONTROL','CHARM','FROST'][index]}</span><h3>${character.name}</h3><p class="fighter-tagline">${character.title}</p><span class="fighter-skill">${styleOf(character).name} · ${moveFor(character,'special').name} ↗</span></div>
       <div class="selection-tags">${state.p1===character.id?'<span class="selection-tag">P1</span>':''}${state.p2===character.id?`<span class="selection-tag cpu">${state.mode==='local'?'P2':state.mode==='practice'?'木桩':'CPU'}</span>`:''}</div>
     </button>`).join('');
   $('roster').querySelectorAll('[data-character]').forEach(button=>button.addEventListener('click',()=>{
     if(state.active||game.phase==='matchOver')return;
     state[state.player===0?'p1':'p2']=button.dataset.character;
     audio.unlock().then(()=>audio.sfx('select'));
-    game.preview(state.p1,state.p2,state.stage);renderRoster();
+    renderer.ensureFighter(button.dataset.character);game.preview(state.p1,state.p2,state.stage);renderRoster();
   }));
+  const notes=$('fighter-notes');if(notes)notes.innerHTML=[state.p1,state.p2].map((id,i)=>{const style=styleOf(id),character=CHARACTERS.find(c=>c.id===id);return `<article style="--accent:${character.accent}"><small>${i?'对手':'你的流派'} / ${style.name}</small><strong>${character.name}</strong><p>${style.mechanic}</p><code>${style.recipe}</code></article>`;}).join('');
   drawPortraits();
 }
 
@@ -77,9 +79,9 @@ function drawPortraits() {
 function updateRecord() { $('record-label').textContent=`本地战绩 ${record.wins} 胜 / ${record.losses} 负`; }
 
 function renderStages(){
-  $('stage-options').innerHTML=STAGES.map(stage=>`<button class="stage-option ${state.stage===stage.id?'selected':''}" data-stage="${stage.id}" aria-pressed="${state.stage===stage.id}"><img src="./assets/${stage.image}" alt=""><span><strong>${stage.name}</strong><small>${stage.subtitle}</small></span><b aria-hidden="true">${state.stage===stage.id?'●':'○'}</b></button>`).join('');
+  $('stage-options').innerHTML=STAGES.map(stage=>`<button class="stage-option ${state.stage===stage.id?'selected':''}" data-stage="${stage.id}" aria-pressed="${state.stage===stage.id}"><img src="./assets/${stage.image.replace('.webp','-thumb.webp')}" width="384" height="154" loading="lazy" decoding="async" alt=""><span><strong>${stage.name}</strong><small>${stage.subtitle}</small></span><b aria-hidden="true">${state.stage===stage.id?'●':'○'}</b></button>`).join('');
   $('stage-options').querySelectorAll('[data-stage]').forEach(button=>button.addEventListener('click',()=>{
-    if(state.active)return;state.stage=button.dataset.stage;saveStorage('milkfrog-stage',state.stage);game.preview(state.p1,state.p2,state.stage);renderStages();
+    if(state.active)return;state.stage=button.dataset.stage;saveStorage('milkfrog-stage',state.stage);renderer.ensureStage(state.stage);game.preview(state.p1,state.p2,state.stage);renderStages();
   }));
   $('stage-label-text').textContent=stageById(state.stage).name;
 }
@@ -106,9 +108,10 @@ function updateMode() {
   $('roster-hint').firstChild.textContent=state.active?'正在切磋中，回到街角后可以重新选蛙。':'点选喜欢的奶蛙，开打之后就别后悔。';
 }
 
-function start() {
+async function start() {
   if(state.loading){toast('奶蛙正在热身，马上就好。');return;}
-  state.active=true;state.paused=false;
+  $('start-button').disabled=true;await Promise.all([renderer.ensureFighter(state.p1),renderer.ensureFighter(state.p2)]);$('start-button').disabled=false;
+  if(state.active)return;state.active=true;state.paused=false;
   document.body.classList.remove('is-paused');
   document.body.classList.add('in-match');
   input.clear();input.enabled=true;
@@ -232,12 +235,16 @@ $('fullscreen-button').addEventListener('click',()=>fullscreen.toggle());
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&state.active&&!state.paused)setPaused(true);});
 window.addEventListener('blur',()=>{if(state.active&&!state.paused)setPaused(true);});
 
-$('special-list').innerHTML=CHARACTERS.map(character=>`<div style="--accent:${character.accent}"><strong>${character.name}</strong><p>${character.specialName} · 25 奶气<br>${character.superName} · 100 奶气<br>${character.description}</p></div>`).join('');
+$('special-list').innerHTML=CHARACTERS.map(character=>{const style=styleOf(character);return `<details style="--accent:${character.accent}"><summary><strong>${character.name} · ${style.name}</strong><span>${moveFor(character,'special').name}</span></summary><p>${style.mechanic}</p><p><b>推荐连招</b>　${style.recipe}</p><dl>${[['L','special'],['前 L','rushSkill'],['下 L','pulse'],['后 L','stance'],['↓ 前 L','powerWave'],['I','super'],['前 I','superRush'],['下 I','superRise'],['后 I','superStorm']].map(([key,slot])=>`<div><dt>${key}</dt><dd>${moveFor(character,slot).name}</dd></div>`).join('')}</dl></details>`;}).join('');
 $('command-list').innerHTML=COMMANDS.map(command=>`<li><code>${command.keys}</code><div><strong>${command.name}</strong><p>${command.detail}</p></div></li>`).join('');
 $('start-button').disabled=true;
 applySettings();updateRecord();updateMode();renderRoster();renderStages();game.preview(state.p1,state.p2,state.stage);
 
+renderer.onAssetsUpdated=drawPortraits;
 renderer.ready.then(errors=>{
+  performance.mark('milkfrog-ready');
+  const warm=()=>renderer.ensureStage(state.stage);
+  if('requestIdleCallback' in window)requestIdleCallback(warm,{timeout:1000});else setTimeout(warm,50);
   state.loading=false;$('start-button').disabled=false;drawPortraits();
   $('loading-hint').hidden=true;
   if(errors.length){$('loading-hint').hidden=false;$('loading-hint').textContent='部分美术加载失败，基础画面仍可开打。';console.warn(errors.join('\n'));}

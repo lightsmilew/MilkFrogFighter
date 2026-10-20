@@ -1,6 +1,6 @@
 // Viewport dimensions stay fixed; world coordinates extend above and sideways.
 export const WORLD = Object.freeze({ width:1280,height:720,arenaWidth:3840,top:-700,floor:610,left:64,right:3776,spawnX:1920,gravity:2050,fighterScale:.7,spriteSize:175,standHeight:145.6,crouchHeight:91,pushDistance:75.6,maxSeparation:1600,damageScale:.44,roundSeconds:90 });
-export const MOVEMENT=Object.freeze({runMultiplier:2.15,dashForward:1180,dashBack:1020,dashDuration:.20,airJumpRatio:1,blinkSpeed:2300,blinkDuration:.16,blinkCharges:2,blinkRecharge:2.5});
+export const MOVEMENT=Object.freeze({runMultiplier:2.15,dashForward:1180,dashBack:1020,dashDuration:.20,airJumpRatio:1,blinkSpeed:2300,blinkDuration:.16,blinkCharges:2,blinkRecharge:3});
 
 export const PLATFORMS = Object.freeze([
   {id:'left-canopy',x:300,y:410,w:290,kind:'awning'},
@@ -24,12 +24,12 @@ export const stageById=id=>STAGES.find(stage=>stage.id===id)||STAGES[0];
 // Every variant retains the classic yellow milk-frog silhouette. Color accents,
 // movement and special moves give the variants different fighting identities.
 export const CHARACTERS = Object.freeze([
-  { id: 'classic', name: '奶蛙', short: '奶蛙', english: 'THE ORIGINAL', title: '笑着就把你打了', color: '#e2ab3c', accent: '#ae4a2d', hue: 0, speed:360,power:1,jump:1220,special:'wave',specialName:'奶气波',superName:'爆笑奶气炮',stats:[3,3,4],description:'经典大肚皮。攻守均衡，一发奶气波打开局面。' },
-  { id:'green',name:'奶绿',short:'奶绿',english:'FAST & FROGGY',title:'你还没反应过来',color:'#97ae58',accent:'#48634b',hue:30,speed:430,power:.86,jump:1280,special:'dash',specialName:'疾风突进',superName:'疾风连环踢',stats:[5,2,3],description:'脚下生风。突进贴脸，靠速度打出连续压制。' },
-  { id:'red',name:'奶红',short:'奶红',english:'RED HOT BELLY',title:'这一拳直接红温',color:'#cf7f6a',accent:'#ad3e30',hue:340,speed:320,power:1.22,jump:1160,special:'stomp',specialName:'红温震地',superName:'红温大爆发',stats:[2,5,3],description:'一肚子力量。近身重击和红温震地都很有分量。' },
-  { id:'purple',name:'奶紫',short:'奶紫',english:'PURPLE HAZE',title:'紫气一来你就慢了',color:'#a99cb6',accent:'#705787',hue:275,speed:370,power:.95,jump:1230,special:'bubble',specialName:'紫气泡泡',superName:'紫气东来',stats:[3,3,5],description:'紫气控场。泡泡命中会减速，拉开距离再出手。' },
-  { id:'pink',name:'奶粉',short:'奶粉',english:'SWEET REVENGE',title:'甜一下，再揍一下',color:'#dda3b0',accent:'#af526e',speed:375,power:.92,jump:1240,special:'charm',specialName:'奶心弹',superName:'甜心大风暴',stats:[3,3,5],description:'奶心弹命中回复少量体力，让对手短暂失衡；连段只回复一次。' },
-  { id:'blue',name:'奶蓝',short:'奶蓝',english:'KEEP IT COOL',title:'先冷静，再出拳',color:'#7eafc8',accent:'#377b9e',speed:355,power:.96,jump:1260,special:'frost',specialName:'冰晶奶气',superName:'极地奶旋风',stats:[3,4,4],description:'冰晶命中产生短暂冰冻与减速，靠控制争取转身的时间。' },
+  { id: 'classic', name: '奶蛙', short: '奶蛙', english: 'THE ORIGINAL', title: '笑着就把你打了', color: '#edc973', accent: '#ae4a2d', hue: 0, speed:360,power:1,jump:1220,special:'wave',specialName:'螺旋奶丸',superName:'大玉奶丸',stats:[3,3,4],description:'螺旋掌聚拢对手，蓄力丸接近身肚击；反击架势能弹开一击。' },
+  { id:'green',name:'奶绿',short:'奶绿',english:'FAST & FROGGY',title:'你还没反应过来',color:'#b2c879',accent:'#48634b',hue:30,speed:430,power:.86,jump:1280,special:'dash',specialName:'风影分身',superName:'千影连袭',stats:[5,2,3],description:'高速近战与分身协同，穿身风刃持续追击，擅长抢攻。' },
+  { id:'red',name:'奶红',short:'奶红',english:'RED HOT BELLY',title:'这一拳直接红温',color:'#f47f6c',accent:'#ad3e30',hue:340,speed:320,power:1.22,jump:1160,special:'stomp',specialName:'地走炎',superName:'火山大喷发',stats:[2,5,3],description:'重击带短暂霸体，三重火柱延迟爆发，靠爆炎冲拳破阵。' },
+  { id:'purple',name:'奶紫',short:'奶紫',english:'PURPLE HAZE',title:'紫气一来你就慢了',color:'#ba96d8',accent:'#705787',hue:275,speed:370,power:.95,jump:1230,special:'bubble',specialName:'幻月追珠',superName:'月蚀结界',stats:[3,3,5],description:'月刃远端打击、幻步换边与牵引结界，控制对手站位。' },
+  { id:'pink',name:'奶粉',short:'奶粉',english:'SWEET REVENGE',title:'甜一下，再揍一下',color:'#f6a6b8',accent:'#af526e',speed:375,power:.92,jump:1240,special:'charm',specialName:'回旋心弹',superName:'千绫花葬',stats:[3,3,5],description:'丝带追击叠加绯印，三层绽放回血；回旋心弹返程可再命中。' },
+  { id:'blue',name:'奶蓝',short:'奶蓝',english:'KEEP IT COOL',title:'先冷静，再出拳',color:'#8bc1f1',accent:'#377b9e',speed:355,power:.96,jump:1260,special:'frost',specialName:'冰晶飞针',superName:'冰镜牢笼',stats:[3,4,4],description:'霜印叠至三层冻结，冰针、冰棱和可挡弹的冰镜封锁地面。' },
 ]);
 
 const MOVE_DATA = {
@@ -47,7 +47,7 @@ const MOVE_DATA = {
   grab: { name:'大肚抱摔', startup:.11, active:.11, recovery:.36, damage:15, reach:116, top:155, bottom:10, level:'throw', stun:.55, push:345, launch:380, meter:12, rank:0 },
   spin: { name:'旋风腿', startup:.13, active:.30, recovery:.27, damage:9, reach:163, top:190, bottom:55, level:'mid', stun:.27, push:60, meter:4, cost:20, hits:2, interval:.16, rank:3 },
   special: { name:'专属技能', startup:.20, active:.12, recovery:.29, damage:15, reach:165, level:'high', stun:.34, push:185, cost:25, meter:5, rank:4, projectile:true },
-  powerWave: { name:'螺旋奶气波', startup:.22, active:.13, recovery:.30, damage:21, reach:180, level:'high', stun:.41, push:210, cost:35, meter:6, rank:4, projectile:true },
+  powerWave: { name:'螺旋螺旋奶丸', startup:.22, active:.13, recovery:.30, damage:21, reach:180, level:'high', stun:.41, push:210, cost:35, meter:6, rank:4, projectile:true },
   pulse: { name:'伏地奶气震', startup:.19, active:.13, recovery:.28, damage:13, reach:185, top:48, bottom:0, level:'low', posture:'crouch', stun:.42, push:180, cost:20, meter:5, rank:4 },
   rushSkill: { name:'破风掌', startup:.12, active:.23, recovery:.28, damage:18, reach:150, top:177, bottom:55, level:'mid', stun:.4, push:230, cost:30, meter:5, rank:4, drive:790 },
   airWave: { name:'空中散气', startup:.16, active:.12, recovery:.24, damage:11, reach:170, level:'overhead', stun:.32, push:170, cost:20, meter:4, rank:4, projectile:true },
@@ -61,29 +61,31 @@ const MOVE_DATA = {
 export const MOVES=Object.freeze(Object.fromEntries(Object.entries(MOVE_DATA).map(([name,move])=>[name,Object.freeze({...move,...Object.fromEntries(['reach','top','bottom','push'].filter(key=>key in move).map(key=>[key,move[key]*WORLD.fighterScale]))})])));
 
 export const isSuperMove = move => MOVES[move]?.rank === 5;
-export const isSkillMove = move => MOVES[move]?.rank === 4;
+export const isSkillMove = move => move==='stance'||MOVES[move]?.rank === 4;
 export const COMMANDS = Object.freeze([
-  {keys:'E / P2：8',name:'闪移脱身',detail:'可存两次，方向 + 闪移穿过对手；受击后也可脱身，每 2.5 秒恢复一次。'},
+  {keys:'E / P2：8',name:'闪移脱身',detail:'可存两次，方向 + 闪移穿过对手；受击后也可脱身，每 3 秒恢复一次。'},
+  {keys:'J → K / K → J',name:'流派分支追击',detail:'命中后拳接脚为分支，脚接拳为回身追击；J J K 接流派终结技。'},
+  {keys:'后 + L',name:'战术技能',detail:'螺旋反击、风影分身、烈焰霸体、牵引结界、绯花结界、凝霜冰镜，消耗 20 奶气。'},
   {keys:'长按 W / 再按 W',name:'连续跳跃 / 二段跳',detail:'落地后自动再跳；空中松开再按可二段跳。摇杆持续上推或松开再上推相同。'},
   {keys:'平台上按住下',name:'穿过平台',detail:'按住下约 0.2 秒即可跳下棚架或屋檐，地面不受影响。'},
-  { keys:'J → J → J', name:'三连奶拳', detail:'直拳 → 追身肘 → 崩山重拳，命中后依次衔接。' },
-  { keys:'J → K → L → I', name:'奶气连携·终式', detail:'连续命中后按必杀，接六段终式；本连招的技能消耗计入 100 奶气总额。' },
+  { keys:'J → J → J', name:'流派三连击', detail:'每位角色各有三段普攻，命中后依次衔接；第三下可换 K 接不同的终结技。' },
+  { keys:'J → K → L → I', name:'流派连携终式', detail:'连续命中后按必杀，接各自的多段终式；本连招的技能消耗计入 100 奶气总额。' },
   { keys:'下 + J / 下 + K', name:'蹲拳 / 扫堂腿', detail:'蹲下躲高段；扫腿打下盘，站防挡不住。' },
   { keys:'跳跃 + J / K / L', name:'空中拳 / 飞燕踢 / 空中散气', detail:'空中出招；飞燕踢与散气能压蹲下的对手。' },
   { keys:'U / O / K + L', name:'升龙 / 抱摔 / 旋风腿', detail:'升龙对空，抱摔破防，旋风腿两段命中。' },
   { keys:'冲刺中 J / K', name:'冲肩拳 / 滑铲', detail:'双击方向先冲刺，再出拳或铲腿。' },
   { keys:'下 + L / 前 + L', name:'伏地奶气震 / 破风掌', detail:'低段震地或向前突进，分别消耗 20 / 30 奶气。' },
-  { keys:'↓ → 前 → L', name:'螺旋奶气波', detail:'半秒内依次输入，强化气功消耗 35 奶气。' },
+  { keys:'↓ → 前 → L', name:'螺旋螺旋奶丸', detail:'半秒内依次输入，强化气功消耗 35 奶气。' },
   { keys:'I', name:'专属必杀', detail:'每只蛙独有的招牌必杀，消耗 100 奶气。' },
-  { keys:'前 + I / K + I', name:'百裂奶拳', detail:'贴身突进五连击，消耗 100 奶气。' },
-  { keys:'下 + I / U + I', name:'九天升龙', detail:'上升三段对空大招，消耗 100 奶气。' },
-  { keys:'后 + I / L + I', name:'天降奶雨', detail:'四波空袭，命中蹲下的对手，消耗 100 奶气。' },
+  { keys:'前 + I / K + I', name:'流派突进奥义', detail:'各流派独有的冲锋、多段、幻步或印记追击，消耗 100 奶气。' },
+  { keys:'下 + I / U + I', name:'流派升空奥义', detail:'风轮、炎柱、月井、花雨、冰龙等独立效果，消耗 100 奶气。' },
+  { keys:'后 + I / L + I', name:'流派空袭奥义', detail:'分身、陨火、月珠、花瓣、冰雨等四波空袭，消耗 100 奶气。' },
 ]);
 
 export const DIFFICULTIES = Object.freeze({
-  easy: { name: '散步蛙', reaction: .35, aggression: .42, block: .13, accuracy: .60 },
-  normal: { name: '认真蛙', reaction: .21, aggression: .65, block: .35, accuracy: .77 },
-  hard: { name: '暴躁蛙', reaction: .12, aggression: .86, block: .57, accuracy: .90 },
+  easy: { name: '散步蛙', reaction:.30,aggression:.68,block:.22,accuracy:.65,combo:.50,escape:.25 },
+  normal: { name: '认真蛙', reaction:.16,aggression:.92,block:.62,accuracy:.88,combo:.90,escape:.65 },
+  hard: { name: '暴躁蛙', reaction:.095,aggression:.99,block:.82,accuracy:.97,combo:.99,escape:.88 },
 });
 
 export const KEYMAPS = Object.freeze([

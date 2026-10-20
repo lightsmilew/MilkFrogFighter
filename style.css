@@ -32,3 +32,15 @@
 @media(orientation:landscape) and (max-height:550px){.arcade-top{height:37px;min-height:37px}.arcade-toolbar{width:auto;gap:9px}.toolbar-controls .screen-button{width:28px;height:26px;font-size:16px}.arcade.is-expanded .arcade-top{height:36px;min-height:36px}.game-screen{height:calc(100dvh - 63px)}}
 .is-paused .touch-controls{visibility:hidden;pointer-events:none}
 @media(orientation:landscape) and (max-height:550px){#pause-overlay .overlay-card{width:min(340px,88%);padding:15px 20px}#pause-overlay .eyebrow{display:none}#pause-overlay .overlay-card h2{font-size:20px;line-height:1.2;margin:4px 0 7px}#pause-overlay .overlay-card p{font-size:10px;line-height:1.4;margin:5px 0 12px}#pause-overlay .primary-button{min-height:33px;padding:7px 15px;font-size:12px}#pause-overlay .overlay-actions{margin-top:12px;gap:34px}#pause-overlay .overlay-actions button{font-size:10px}}
+.fighter-notes{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin:20px 0 4px}
+.fighter-notes article{border-top:2px solid var(--accent);padding-top:12px;min-width:0}
+.fighter-notes small{font:10px Consolas,monospace;color:var(--accent);letter-spacing:1px}
+.fighter-notes strong{font-size:17px;margin-left:12px}.fighter-notes p{font-size:12px;line-height:1.8;margin:7px 0;color:#526353}
+.fighter-notes code{font-size:11px;color:var(--accent)}
+.special-list details{border-top:2px solid var(--accent);padding:12px 0}
+.special-list summary{cursor:pointer;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.special-list summary span{font-size:12px;color:var(--accent)}
+.special-list dl{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;font-size:12px}
+.special-list dl div{display:flex;gap:12px;border-bottom:1px solid #263d341a;padding:5px 0}
+.special-list dt{width:52px;flex-shrink:0;font:11px Consolas,monospace}.special-list dd{margin:0}
+@media(max-width:620px){.fighter-notes{grid-template-columns:1fr;gap:15px}.special-list dl{grid-template-columns:1fr}}

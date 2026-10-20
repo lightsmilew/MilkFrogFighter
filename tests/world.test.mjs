@@ -70,9 +70,9 @@ test('two stored flashes cross an opponent, dodge a punch and refill sequentiall
   assert.ok(a.x>b.x);assert.equal(a.hp,100);assert.equal(a.blinkCharges,1);assert.equal(a.blinkCooldown,0);
   step(game,[['right'],[]],[['blink'],[]]);assert.equal(a.blinkCharges,0);assert.ok(a.blinkCooldown>1);
   const count=events.filter(e=>e.type==='blink').length;advance(game,.2);step(game,[[],[]],[['blink'],[]]);assert.equal(events.filter(e=>e.type==='blink').length,count);
-  assert.equal(MOVEMENT.blinkRecharge,2.5);
-  advance(game,2);assert.equal(a.blinkCharges,0);advance(game,.12);assert.equal(a.blinkCharges,1);
-  advance(game,2.5);assert.equal(a.blinkCharges,2);assert.equal(a.blinkRecharge,0);
+  assert.equal(MOVEMENT.blinkRecharge,3);
+  advance(game,2.5);assert.equal(a.blinkCharges,0);advance(game,.12);assert.equal(a.blinkCharges,1);
+  advance(game,3);assert.equal(a.blinkCharges,2);assert.equal(a.blinkRecharge,0);
 });
 
 test('flash breaks hitstun after a brief confirm window and escapes the wall',()=>{
