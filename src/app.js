@@ -1,4 +1,5 @@
 import {shareGame,gameShareUrl} from './share.js';
+import {setScreenIcon} from './screen-icons.js';
 import {styleOf,moveFor} from './styles.js';
 import { CHARACTERS, COMMANDS, STAGES, stageById } from './config.js';
 import { Game } from './engine.js';
@@ -11,6 +12,9 @@ const $ = id => document.getElementById(id);
 const readStorage = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } };
 const saveStorage = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* Private browsing/storage quota must not interrupt a match. */ } };
 const isCoarse = matchMedia('(pointer: coarse)').matches;
+const portraitQuery = matchMedia('(orientation: portrait)');
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isStandalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const storedSettings = readStorage('milkfrog-settings', {});
 delete storedSettings.scanlines;
@@ -18,13 +22,51 @@ const settings = { volume: 42, music: true, shake: !reducedMotion, touch: isCoar
 const record = { wins: 0, losses: 0, ...readStorage('milkfrog-record', {}) };
 const state = { mode: 'ai', p1: 'classic', p2: 'green', stage:stageById(readStorage('milkfrog-stage','street')).id,player: 0, active: false, paused: false, loading: true, dummyGuard: false };
 const audio = new ArcadeAudio();
+audio.armGestureUnlock();
+export { audio };
 const renderer = new Renderer($('game'));
 export const fullscreen=new FullscreenController($('arcade'),active=>{
   $('arcade').classList.toggle('is-expanded',active);
-  $('fullscreen-button').textContent=active?'↙':'⛶';$('fullscreen-button').setAttribute('aria-label',active?'退出全屏':'切换全屏');
-});
+  setScreenIcon($('fullscreen-button'),active?'collapse':'expand',active?'退出全屏':'切换全屏');
+  $('fullscreen-button').setAttribute('aria-pressed',String(active));
+  updateRotateHint();
+},{onUnavailable:showFullscreenTip});
 let toastTimer = null;
 let lastEnergyNotice = -1000;
+
+/** iPhone Safari has no element fullscreen, so the in-page immersion mode is
+ *  as close as a tab can get: explain the one-time upgrade instead of letting
+ *  the player think the button is broken. */
+let tipTimer = null;
+function showFullscreenTip(){
+  if(!isIOS||isStandalone)return;
+  // Landscape already uses the whole height for the arena; the card would sit
+  // on top of the health bars, so only explain this in portrait.
+  if(!portraitQuery.matches)return;
+  if(readStorage('milkfrog-fullscreen-tip',false))return;
+  const tip=$('fullscreen-tip');if(!tip)return;
+  saveStorage('milkfrog-fullscreen-tip',true);
+  tip.hidden=false;
+  requestAnimationFrame(()=>tip.classList.add('is-visible'));
+  clearTimeout(tipTimer);tipTimer=setTimeout(hideFullscreenTip,12000);
+}
+function hideFullscreenTip(){
+  const tip=$('fullscreen-tip');if(!tip)return;
+  clearTimeout(tipTimer);
+  tip.classList.remove('is-visible');tip.hidden=true;
+}
+function dismissFullscreenTip(){
+  hideFullscreenTip();
+  saveStorage('milkfrog-fullscreen-tip',true);
+}
+
+/** Landscape gives the two thumbs more space while the arena fills either
+ *  orientation without changing the fighters' proportions. */
+function updateRotateHint(){
+  const hint=$('rotate-hint');if(!hint)return;
+  hint.hidden=!(fullscreen.active&&portraitQuery.matches&&isCoarse);
+  if(!portraitQuery.matches)hideFullscreenTip();
+}
 
 function toast(message) {
   $('game-toast').textContent = message;
@@ -80,7 +122,7 @@ function drawPortraits() {
 function updateRecord() { $('record-label').textContent=`本地战绩 ${record.wins} 胜 / ${record.losses} 负`; }
 
 function renderStages(){
-  $('stage-options').innerHTML=STAGES.map(stage=>`<button class="stage-option ${state.stage===stage.id?'selected':''}" data-stage="${stage.id}" aria-pressed="${state.stage===stage.id}"><img src="./assets/${stage.image.replace('.webp','-thumb.webp')}" width="384" height="154" loading="lazy" decoding="async" alt=""><span><strong>${stage.name}</strong><small>${stage.subtitle}</small></span><b aria-hidden="true">${state.stage===stage.id?'●':'○'}</b></button>`).join('');
+  $('stage-options').innerHTML=STAGES.map(stage=>`<button class="stage-option ${state.stage===stage.id?'selected':''}" data-stage="${stage.id}" aria-pressed="${state.stage===stage.id}"><img src="./assets/${stage.thumbnail}" width="384" height="154" loading="lazy" decoding="async" alt=""><span><strong>${stage.name}</strong><small>${stage.subtitle}</small></span><b aria-hidden="true">${state.stage===stage.id?'●':'○'}</b></button>`).join('');
   $('stage-options').querySelectorAll('[data-stage]').forEach(button=>button.addEventListener('click',()=>{
     if(state.active)return;state.stage=button.dataset.stage;saveStorage('milkfrog-stage',state.stage);renderer.ensureStage(state.stage);game.preview(state.p1,state.p2,state.stage);renderStages();
   }));
@@ -111,16 +153,24 @@ function updateMode() {
 
 async function start() {
   if(state.loading){toast('奶蛙正在热身，马上就好。');return;}
-  $('start-button').disabled=true;await Promise.all([renderer.ensureFighter(state.p1),renderer.ensureFighter(state.p2)]);$('start-button').disabled=false;
-  if(state.active)return;state.active=true;state.paused=false;
-  document.body.classList.remove('is-paused');
+  if(state.starting)return;state.starting=true;
+  // Unlock audio before any await: iPhone only starts Web Audio while the tap
+  // is being handled, and asset await would push this outside the gesture.
+  audio.unlock();audio.whenRunning(()=>audio.sfx('start'));
+  $('start-button').disabled=true;
+  try{await Promise.all([renderer.ensureFighter(state.p1),renderer.ensureFighter(state.p2)]);}
+  finally{state.starting=false;$('start-button').disabled=false;}
+  state.active=true;state.paused=false;
+  document.body.classList.remove('is-paused','match-ended');
   document.body.classList.add('in-match');
   input.clear();input.enabled=true;
   $('home-overlay').hidden=true;$('pause-overlay').hidden=true;$('result-overlay').hidden=true;
   $('pause-button').hidden=false;$('stage-label').hidden=true;
+  setScreenIcon($('pause-button'),'pause','暂停游戏');$('pause-button').setAttribute('aria-pressed','false');
   game.start({p1:state.p1,p2:state.p2,stage:state.stage,mode:state.mode,difficulty:$('difficulty').value,practiceGuard:state.dummyGuard});
-  audio.unlock().then(()=>{audio.sfx('start');audio.setActive(true);});
-  updateMode();renderRoster();
+  audio.setActive(true);
+  updateMode();renderRoster();updateRotateHint();
+  if(isStandalone&&isCoarse&&!fullscreen.active){fullscreen.enterPseudo();fullscreen.handleChange();}
   $('game').focus({preventScroll:true});
   if(state.mode==='local'&&settings.touch)toast('双人请用键盘或两只手柄，触屏按键控制 P1。');
 }
@@ -130,8 +180,8 @@ function setPaused(paused) {
   state.paused=paused;input.clear();input.enabled=!paused;
   document.body.classList.toggle('is-paused',paused);
   $('pause-overlay').hidden=!paused;
-  $('pause-button').textContent=paused?'▶':'Ⅱ';
-  $('pause-button').setAttribute('aria-label',paused?'继续游戏':'暂停游戏');
+  setScreenIcon($('pause-button'),paused?'play':'pause',paused?'继续游戏':'暂停游戏');
+  $('pause-button').setAttribute('aria-pressed',String(paused));
   audio.setActive(!paused);
   if(!paused)$('game').focus({preventScroll:true});
 }
@@ -139,7 +189,7 @@ function setPaused(paused) {
 function lobby() {
   if(fullscreen.active)fullscreen.exit();
   state.active=false;state.paused=false;
-  document.body.classList.remove('is-paused');
+  document.body.classList.remove('is-paused','match-ended');
   document.body.classList.remove('in-match');
   input.enabled=false;input.clear();game.toAttract();game.preview(state.p1,state.p2,state.stage);
   $('home-overlay').hidden=false;$('pause-overlay').hidden=true;$('result-overlay').hidden=true;
@@ -150,6 +200,7 @@ function lobby() {
 
 function finishMatch(winner) {
   state.active=false;input.enabled=false;input.clear();audio.setActive(false);
+  document.body.classList.add('match-ended');
   const character=game.fighters[winner].character;
   $('result-title').textContent=state.mode==='local'?`P${winner+1} · 今日街霸！`:winner===0?'这条街，你说了算。':'这只蛙，有点东西。';
   $('result-detail').textContent=`${character.name} 拿下本场。${winner===0?'笑到最后的，果然是你。':'喝口奶，下一局再赢回来。'}`;
@@ -250,7 +301,14 @@ document.querySelectorAll('[data-player]').forEach(button=>button.addEventListen
 }));
 $('dummy-button').addEventListener('click',()=>{state.dummyGuard=!state.dummyGuard;game.practiceGuard=state.dummyGuard;updateMode();input.clear();});
 $('practice-reset').addEventListener('click',()=>{game.newRound();input.clear();});
+setScreenIcon($('fullscreen-button'),'expand','切换全屏');
+setScreenIcon($('pause-button'),'pause','暂停游戏');
 $('fullscreen-button').addEventListener('click',()=>fullscreen.toggle());
+$('fullscreen-tip-close')?.addEventListener('click',dismissFullscreenTip);
+portraitQuery.addEventListener?.('change',updateRotateHint);
+window.addEventListener('resize',updateRotateHint);
+window.addEventListener('orientationchange',()=>setTimeout(updateRotateHint,120));
+if(isIOS){$('ios-audio-note')?.removeAttribute('hidden');}
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&state.active&&!state.paused)setPaused(true);});
 window.addEventListener('blur',()=>{if(state.active&&!state.paused)setPaused(true);});
 
@@ -271,6 +329,7 @@ renderer.ready.then(errors=>{
 
 let lastTime=performance.now(),accumulator=0;
 function frame(now){
+  renderer.syncViewport(game);
   const elapsed=Math.min(.1,(now-lastTime)/1000);lastTime=now;
   if(!state.paused){
     accumulator+=elapsed;

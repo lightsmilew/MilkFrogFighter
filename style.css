@@ -93,3 +93,102 @@
 }
 
 .touch-actions button small{white-space:nowrap}
+
+/* ---------------------------------------------------------------------------
+   iPhone fullscreen / audio helpers (2026-10-20)
+   The immersive fallback locks scrolling and re-measures after rotation.
+   The arena expands its view at the new aspect ratio; the installation hint
+   explains the browser chrome that a normal iPhone tab cannot hide.
+   --------------------------------------------------------------------------- */
+html.immersive-root,html.immersive-root body{height:100%;overflow:hidden!important;overscroll-behavior:none}
+html.immersive-root{width:100%;-webkit-text-size-adjust:100%}
+.game-screen .rotate-hint{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:24;display:flex;align-items:center;gap:7px;padding:6px 11px;background:#14261ee6;color:#f5edd4;border:1px solid #f5edd455;border-radius:2px;font-size:10px;letter-spacing:1px;white-space:nowrap;pointer-events:none;box-shadow:0 2px 0 #0a1a1266}
+.game-screen .rotate-hint svg{flex-shrink:0;animation:rotate-hint-nudge 2.6s ease-in-out infinite}
+@keyframes rotate-hint-nudge{0%,58%,100%{transform:rotate(0)}72%,86%{transform:rotate(-90deg)}}
+.arcade .fullscreen-tip{position:absolute;left:50%;top:44px;width:min(460px,calc(100% - 20px));z-index:32;display:flex;align-items:flex-start;gap:10px;padding:9px 12px;background:#f7efdb;border:1px solid #263d34;box-shadow:4px 4px 0 #0c1e1580;font-size:10px;line-height:1.6;color:#263d34;opacity:0;transform:translate(-50%,-6px);transition:opacity .2s,transform .2s}
+.arcade .fullscreen-tip.is-visible{opacity:1;transform:translate(-50%,0)}
+.fullscreen-tip div{display:flex;flex-direction:column;gap:3px;min-width:0}
+.fullscreen-tip strong{font-size:11px;letter-spacing:.5px}
+.fullscreen-tip span{color:#5c6655}
+.fullscreen-tip button{flex-shrink:0;border:1px solid #263d34;background:#263d34;color:#fff6dd;padding:5px 9px;font-size:10px;white-space:nowrap}
+@media(max-width:620px){.arcade .fullscreen-tip{font-size:9px;padding:8px 10px}.fullscreen-tip strong{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.game-screen .rotate-hint svg{animation:none}}
+
+/* Full-bleed arena: the canvas reveals more world at the screen's aspect ratio.
+   Safe-area space belongs to controls, never to opaque strips around the map. */
+.arcade.is-expanded{padding:0;overflow:hidden}
+.arcade{--safe-left:env(safe-area-inset-left,0px);--safe-right:env(safe-area-inset-right,0px);--safe-top:env(safe-area-inset-top,0px)}
+.arcade.is-expanded .game-screen{position:absolute;inset:0;flex:none;width:100%;height:100%;aspect-ratio:auto}
+.arcade.is-expanded #game{object-fit:fill}
+.arcade.is-expanded .arcade-top{position:absolute;inset:0 0 auto;height:0;min-height:0;padding:0;background:none;z-index:26;pointer-events:none}
+.arcade.is-expanded .arcade-toolbar{position:absolute;inset:0;display:block;width:auto;height:0;margin:0;pointer-events:none}
+.arcade.is-expanded .arcade-toolbar .difficulty-label,.arcade.is-expanded .mode-tabs{display:none}
+.arcade.is-expanded .toolbar-controls{position:absolute;left:50%;top:max(8px,env(safe-area-inset-top));transform:translateX(-50%);gap:clamp(62px,9vw,100px);pointer-events:none}
+.toolbar-controls .screen-button svg{display:block;width:18px;height:18px;pointer-events:none}
+.toolbar-controls .screen-button{border-radius:6px}
+.arcade.is-expanded .toolbar-controls .screen-button{width:44px;height:44px;border-radius:50%;background:#f3efdfbf;color:#263d34;border:1px solid #fff7df8c;pointer-events:auto;box-shadow:0 2px 8px #142d2426;backdrop-filter:blur(6px)}
+.arcade.is-expanded .toolbar-controls .screen-button:hover{background:#fff9e8ed}
+.arcade.is-expanded .toolbar-controls .screen-button svg{width:20px;height:20px}
+.arcade.is-expanded .arcade-bottom,.arcade.is-expanded .stage-picker{display:none}
+.arcade.is-expanded .touch-controls{position:absolute;left:max(20px,env(safe-area-inset-left));right:max(20px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));padding:0;background:none;z-index:18}
+.game-screen canvas{object-fit:fill}
+
+/* Two thumbs: guard by the stick, a large punch in the right thumb's resting
+   position, kick/skill on its arc, and a separated ultimate above the arc. */
+.touch-controls{--pad:1;position:relative;align-items:flex-end;justify-content:space-between;gap:8px;padding:14px 18px 16px;min-height:214px}
+.touch-controls .joystick-wrap{position:relative;width:calc(110px * var(--pad));padding-top:44px;gap:6px;flex-shrink:0}
+.touch-controls .joystick{width:calc(106px * var(--pad));height:calc(106px * var(--pad))}
+.touch-controls .joystick{background:radial-gradient(circle,#213d301a 0%,#34564226 69%,#9ab28b40 70%,#304d3b29 100%);border-color:#cad7ad80;box-shadow:inset 0 1px 5px #0e261b26,0 1px 0 #e9eccb33}
+.touch-controls button{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:44px;min-height:44px;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;border:2px solid #efe8c1a3;box-shadow:0 3px 0 #10271f80;background:#efebcbd9;color:#263d34;border-radius:50%;font-size:22px;font-weight:800;opacity:.84;padding:0;line-height:1.1}
+.touch-controls button small{font-size:9px;font-weight:400;margin-top:5px;white-space:nowrap}
+.touch-controls button.active{opacity:1;transform:scale(.95);background:#fff3a9}
+.touch-controls .joystick-wrap .touch-guard{position:absolute;left:calc(55px * var(--pad));top:0;width:calc(48px * var(--pad));height:calc(48px * var(--pad));min-width:44px;min-height:44px;font-size:18px;background:#304f40c9;color:#f2ebc9}
+.touch-controls .touch-actions{position:relative;display:block;flex-shrink:0;width:calc(224px * var(--pad));height:calc(190px * var(--pad))}
+.touch-actions button{position:absolute}
+.touch-actions [data-action="jab"]{left:calc(79px * var(--pad));bottom:0;width:calc(76px * var(--pad));height:calc(76px * var(--pad));font-size:27px;border-color:#fff4c4;background:#f4e9bbc9}
+.touch-actions [data-action="kick"]{right:0;bottom:calc(52px * var(--pad));width:calc(64px * var(--pad));height:calc(64px * var(--pad))}
+.touch-actions [data-action="special"]{left:0;bottom:calc(90px * var(--pad));width:calc(64px * var(--pad));height:calc(64px * var(--pad))}
+.touch-actions .touch-blink{left:0;bottom:calc(15px * var(--pad));width:calc(56px * var(--pad));height:calc(56px * var(--pad));border-radius:50%;background:#9bbca7cf;color:#17372b;font-size:21px}
+.touch-actions .touch-super{right:calc(21px * var(--pad));bottom:calc(136px * var(--pad));width:calc(54px * var(--pad));height:calc(54px * var(--pad));background:#b95135c9;color:#fff3cf;font-size:16px}
+.touch-actions .touch-blink small{font-size:10px}
+.is-paused .touch-controls,.match-ended .touch-controls{visibility:hidden;pointer-events:none}
+.match-ended .arcade.is-expanded .arcade-top{visibility:hidden}
+.paper-dialog{max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);overflow:auto;overscroll-behavior:contain}
+.center-overlay{padding:10px;z-index:22}
+.center-overlay .overlay-card{flex:0 1 440px;width:min(440px,94%);max-height:100%;min-height:0;padding:clamp(12px,4cqh,28px);overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.center-overlay .overlay-card h2{font-size:clamp(18px,5cqh,27px);line-height:1.25;margin:5px 0 10px;letter-spacing:0}
+.center-overlay .overlay-card p{font-size:12px;line-height:1.5;margin:6px 0 14px}
+.center-overlay .eyebrow{font-size:9px;letter-spacing:1px;margin-bottom:10px}
+.center-overlay .primary-button{min-height:42px;padding:9px 14px;font-size:13px;letter-spacing:1px}
+.center-overlay .result-stats{padding:12px 0;margin:12px 0 16px}
+.center-overlay .result-stats strong{font-size:25px}
+.center-overlay .result-card>.underlined-button{margin-top:14px;min-height:32px;padding:6px 2px}
+@container arena (max-height:420px){
+ .center-overlay .eyebrow{display:none}.center-overlay .overlay-card{padding:14px 22px;width:min(420px,94%)}
+ .center-overlay .overlay-card h2{font-size:23px;margin:0 0 6px}.center-overlay .overlay-card p{font-size:11px;margin:5px 0 10px}
+ .center-overlay .result-stats{padding:9px 0;margin:8px 0 12px}.center-overlay .result-stats strong{font-size:23px}
+ .center-overlay .primary-button{min-height:40px;padding:8px 12px}.center-overlay .result-card>.underlined-button{margin-top:8px;min-height:30px}
+}
+@container arena (max-height:230px){
+ .center-overlay{padding:5px}.center-overlay .overlay-card{padding:7px 14px}
+ .center-overlay .overlay-card h2{font-size:17px;margin:0 0 4px}.center-overlay .overlay-card p{display:none}
+ .center-overlay .result-stats{padding:4px 0;margin:4px 0 6px}.center-overlay .result-stats strong{font-size:17px}.center-overlay .result-stats span{font-size:8px;margin-top:1px}
+ .center-overlay .primary-button{min-height:30px;font-size:11px;padding:4px 8px}.center-overlay .primary-button>span{font-size:18px}
+ .center-overlay .result-card>.underlined-button{margin-top:3px;min-height:26px;font-size:10px;padding:4px}
+}
+@media(max-width:620px){.touch-controls{--pad:.94;padding:12px 12px 15px;min-height:202px}}
+@media(max-width:370px){.touch-controls{--pad:.80;padding:10px 4px 12px;min-height:174px}.touch-controls .joystick-wrap>small{font-size:8px}.touch-controls button small{font-size:8px}}
+@media(orientation:landscape) and (max-height:550px){
+ .touch-controls{position:absolute;left:max(18px,env(safe-area-inset-left));right:max(18px,env(safe-area-inset-right));bottom:32px;padding:0;min-height:0;background:none;pointer-events:none;z-index:18}
+ .touch-controls .joystick-wrap>small{display:none}.touch-controls button{opacity:.66}
+}
+@media(orientation:landscape) and (max-height:350px){.touch-controls{--pad:.84}}
+@media(pointer:coarse) and (orientation:landscape) and (min-height:551px){
+ .in-match .site-header,.in-match .masthead,.in-match .roster-section,.in-match .quick-guide,.in-match .site-footer,.in-match .stage-picker{display:none}
+ .in-match .page-shell{max-width:none;padding:0}.in-match .arcade{border:0;box-shadow:none}
+ .in-match .arcade:not(.is-expanded) .arcade-top{height:44px;min-height:44px;padding:3px 14px}
+ .in-match .arcade:not(.is-expanded) .game-screen{height:calc(100dvh - 70px);aspect-ratio:auto}
+ .in-match .arcade-bottom{min-height:26px;padding:5px 15px}
+ .in-match .touch-controls{position:absolute;left:max(20px,env(safe-area-inset-left));right:max(20px,env(safe-area-inset-right));bottom:32px;padding:0;min-height:0;background:none;pointer-events:none;z-index:18}
+}
+@media(orientation:portrait){.arcade.is-expanded .toolbar-controls{top:max(64px,env(safe-area-inset-top))}}

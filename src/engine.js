@@ -10,13 +10,15 @@ const intersects=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
 const circleHits=(c,b)=>Math.hypot(c.x-clamp(c.x,b.x,b.x+b.w),c.y-clamp(c.y,b.y,b.y+b.h))<c.radius;
 const ATTACK_INPUTS=['super','special','uppercut','grab','spin','kick','jab'];
 const S=WORLD.fighterScale;
+// Move data uses percentage-sized balance units; health uses 1000 points.
+const H=WORLD.maxHealth/100;
 
 export class Fighter {
   constructor(id,index){this.character=characterById(id);this.index=index;this.reset();}
   reset(){
     Object.assign(this,{
       x:WORLD.spawnX+(this.index===0?-290:290),y:WORLD.floor,vx:0,vy:0,facing:this.index===0?1:-1,
-      hp:100,trailHp:100,energy:25,state:'idle',stateTime:0,attack:null,stun:0,slow:0,
+      hp:WORLD.maxHealth,trailHp:WORLD.maxHealth,energy:25,state:'idle',stateTime:0,attack:null,stun:0,slow:0,
       combo:0,comboTimer:0,maxCombo:0,landed:0,blocking:false,crouching:false,flash:0,invincible:0,
       buffer:null,cancelTime:0,aiThink:0,aiHeld:new Set(),hasHit:false,stunKind:'hurt',tauntTime:0,
       inputHeld:new Set(),history:[],tapTimes:{left:-10,right:-10},pendingDash:null,
@@ -102,7 +104,7 @@ export class Game {
     for(const f of this.fighters)this.resolveAttack(f,this.fighters[1-f.index]);
     this.updateProjectiles(dt);
     if(this.mode==='practice'){
-      for(const f of this.fighters){f.energy=100;if(f.hp<=0||(f.stun<=0&&f.comboTimer<=0&&f.downTime<=0&&f.getUpTime<=0&&!f.grappled))f.hp=100;}
+      for(const f of this.fighters){f.energy=100;if(f.hp<=0||(f.stun<=0&&f.comboTimer<=0&&f.downTime<=0&&f.getUpTime<=0&&!f.grappled))f.hp=WORLD.maxHealth;}
     }else if(a.hp<=0||b.hp<=0||this.roundTime<=0)this.endRound();
   }
   intake(f,input){
@@ -480,7 +482,7 @@ export class Game {
       this.emit('counter',{index:defender.index});return;
     }
     const armored=defender.attack?.config.armor>defender.attack?.time&&!defender.armorUsed&&level!=='throw'&&!isSuperMove(move);
-    const damage=config.damage*WORLD.damageScale*attacker.character.power*Math.max(.28,.80**Math.max(0,attacker.combo-2))*(armored?.6:1);
+    const damage=config.damage*WORLD.damageScale*H*attacker.character.power*Math.max(.28,.80**Math.max(0,attacker.combo-2))*(armored?.6:1);
     defender.hp=Math.max(0,defender.hp-damage*(blocked?.12:1));defender.vx=direction*config.push*(blocked?.38:1);
     const hitY=clamp(projectile?.y??attacker.y-((config.top||160*S)+(config.bottom||60*S))/2,defender.y-WORLD.standHeight+12*S,defender.y-10*S);
     if(blocked){
@@ -494,7 +496,7 @@ export class Game {
     let reaction=config.launch?'launch':['sweep','slide','pulse'].includes(move)?'trip':['kick','diveKick','straight','rushPunch','rushSkill'].includes(move)?'body':isSuperMove(move)?'tumble':'flinch';
     if(projectile?.frost){reaction='freeze';defender.frost=.24;defender.slow=projectile.super?1.6:.8;defender.slowSource='frost';}
     if(projectile?.charm){reaction='charm';defender.charm=1.1;
-      if(!attacker.healIds.includes(attackId)){attacker.hp=Math.min(100,attacker.hp+(projectile.super?5:2));attacker.healIds.push(attackId);attacker.healIds=attacker.healIds.slice(-12);this.effect('heart',attacker.x,attacker.y-125,'#efa3bd',4,.65);}
+      if(!attacker.healIds.includes(attackId)){attacker.hp=Math.min(WORLD.maxHealth,attacker.hp+(projectile.super?5:2)*H);attacker.healIds.push(attackId);attacker.healIds=attacker.healIds.slice(-12);this.effect('heart',attacker.x,attacker.y-125,'#efa3bd',4,.65);}
     }
     defender.reaction={type:reaction,age:0,direction};
     if(projectile?.slow){defender.slow=projectile.super?2.1:1.2;defender.slowSource='bubble';}
@@ -506,7 +508,7 @@ export class Game {
     }
     if(config.mark||projectile?.charm){
       defender.petals++;defender.petalWindow=2.3;
-      if(defender.petals>=3){defender.petals=0;defender.hp=Math.max(0,defender.hp-2.5);attacker.hp=Math.min(100,attacker.hp+2);this.effect('bloom',defender.x,hitY,'#ffadd3',1,.55);this.emit('bloom',{index:attacker.index});}
+      if(defender.petals>=3){defender.petals=0;defender.hp=Math.max(0,defender.hp-2.5*H);attacker.hp=Math.min(WORLD.maxHealth,attacker.hp+2*H);this.effect('bloom',defender.x,hitY,'#ffadd3',1,.55);this.emit('bloom',{index:attacker.index});}
     }
     defender.energy=clamp(defender.energy+8,0,100);
     if(config.launch){defender.vy=-config.launch;defender.platformId=null;defender.jumpDodge=0;defender.juggleCount++;}

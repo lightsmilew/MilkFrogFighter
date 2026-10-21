@@ -5,10 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#263d34">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="奶蛙街头">
   <meta name="description" content="奶蛙街头：一肚子奶气，一身好功夫。经典奶蛙表情包的街机格斗场，支持人机、同屏双人、练习与触屏操作。">
   <title>奶蛙街头 · MILKFROG FIGHT CLUB</title>
   <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
+  <link rel="manifest" href="./manifest.webmanifest">
   <link rel="preload" href="./assets/fighters/classic.webp" as="image" fetchpriority="high">
   <link rel="preload" href="./assets/fighters/green.webp" as="image" fetchpriority="high">
   <link rel="modulepreload" href="./src/engine.js">
@@ -85,6 +89,7 @@
           </div>
         </div>
         <div class="game-toast" id="game-toast" role="status" aria-live="polite"></div>
+        <div class="rotate-hint" id="rotate-hint" hidden aria-hidden="true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg><span>横屏开打，视野更宽</span></div>
       </div>
 
       <div class="arcade-bottom">
@@ -95,8 +100,13 @@
       </div>
 
       <div class="touch-controls" id="touch-controls" aria-label="触屏操作" hidden>
-        <div class="joystick-wrap"><div id="joystick" class="joystick" role="group" aria-label="移动摇杆。左右拖动移动，推满奔跑，连续拨动冲刺，上推跳跃，下拉蹲下。"><span class="joystick-guide" aria-hidden="true"></span><span class="joystick-knob" aria-hidden="true"></span></div><small>推满跑 · 上推跳</small></div>
-        <div class="touch-actions"><div class="touch-defense-grid"><button data-action="blink" class="touch-blink" aria-label="闪移脱身">闪<small data-blink-label>2/2</small></button><button data-action="guard" class="touch-guard" aria-label="防御">挡<small>长按</small></button></div><div class="touch-attack-grid"><button data-action="jab" aria-label="拳。上加拳升龙，下加拳抱摔">拳<small>↑升 ↓摔</small></button><button data-action="kick" aria-label="踢腿。下加脚扫腿">脚<small>↓扫腿</small></button><button data-action="special" aria-label="技能">技<small>配方向</small></button><button data-action="super" class="touch-super" aria-label="必杀">必杀<small>100</small></button></div></div>
+        <div class="joystick-wrap"><button data-action="guard" class="touch-guard" aria-label="防御，长按">挡<small>长按</small></button><div id="joystick" class="joystick" role="group" aria-label="移动摇杆。左右拖动移动，推满奔跑，连续拨动冲刺，上推跳跃，下拉蹲下。"><span class="joystick-guide" aria-hidden="true"></span><span class="joystick-knob" aria-hidden="true"></span></div><small>推满跑 · 上推跳</small></div>
+        <div class="touch-actions"><button data-action="jab" aria-label="拳。上加拳升龙，下加拳抱摔">拳<small>↑升 ↓摔</small></button><button data-action="kick" aria-label="踢腿。下加脚扫腿">脚<small>↓扫腿</small></button><button data-action="special" aria-label="技能">技<small>配方向</small></button><button data-action="super" class="touch-super" aria-label="必杀">必杀<small>100</small></button><button data-action="blink" class="touch-blink" aria-label="闪移脱身">闪<small data-blink-label>2/2</small></button></div>
+      </div>
+
+      <div class="fullscreen-tip" id="fullscreen-tip" hidden role="status">
+        <div><strong>iPhone 浏览器无法隐藏地址栏。</strong><span>Safari 点「分享」→「添加到主屏幕」，从桌面图标打开就是真全屏。</span></div>
+        <button id="fullscreen-tip-close" type="button">知道了</button>
       </div>
     </section>
 
@@ -133,6 +143,7 @@
     <div class="setting-row"><span>经典奶蛙大笑<small>网络经典原声片段</small></span><button class="underlined-button" id="laugh-test">听一声 ♪</button></div>
     <label class="setting-row" for="shake"><span>命中震屏<small>出拳更有分量</small></span><input type="checkbox" id="shake" checked></label>
     <label class="setting-row" for="touch-setting"><span>显示触屏按键<small>触屏设备默认开启</small></span><input type="checkbox" id="touch-setting"></label>
+    <p class="help-note" id="ios-audio-note" hidden>iPhone 的侧边静音开关可能让网页合成音没有声音：没声音时先关掉静音开关，再确认上面的总音量不是 0。全屏请横过手机，或把页面「添加到主屏幕」后从桌面图标打开。</p>
     <p class="help-note">设置和人机战绩只保存在当前浏览器。</p>
   </dialog>
 

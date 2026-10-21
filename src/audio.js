@@ -15,11 +15,20 @@ export class ArcadeAudio {
     this.laughEpoch = 0;
   }
 
-  async unlock() {
+  get running() { return Boolean(this.context && this.context.state === 'running'); }
+
+  /** Create/resume the AudioContext *inside* the user gesture.
+   *
+   * iPhone Safari only starts Web Audio for a context that was created or
+   * resumed while a gesture was being handled. The previous version awaited
+   * asset loading first, so the context was born outside the tap: it stayed
+   * suspended and the whole cabinet was silent. Nothing here may await before
+   * resume(); the decode work is deferred to the state-change handler. */
+  unlock() {
     try {
       if (!this.context) {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContext) return;
+        if (!AudioContext) return Promise.resolve(false);
         this.context = new AudioContext();
         this.master = this.context.createGain();
         this.master.connect(this.context.destination);
@@ -30,10 +39,82 @@ export class ArcadeAudio {
         this.noiseBuffer = this.context.createBuffer(1, this.context.sampleRate * .3, this.context.sampleRate);
         const samples = this.noiseBuffer.getChannelData(0);
         for (let i = 0; i < samples.length; i++) samples[i] = Math.random() * 2 - 1;
+        this.context.onstatechange = () => this.syncState();
       }
-      if (this.context.state === 'suspended') await this.context.resume();
-      if (!this.laughReady) this.laughReady = this.loadLaugh();
+      if (this.context.state !== 'running') {
+        try { this.context.resume().catch(() => { /* Retried on the next gesture. */ }); } catch { /* Missing Web Audio. */ }
+      }
+      this.syncState();
     } catch { /* Gameplay remains available when a browser blocks audio. */ }
+    return Promise.resolve(this.running);
+  }
+
+  /** Catch the first tap anywhere, so iOS sees a real gesture even when the
+   *  player starts the match with the keyboard or a delayed handler. */
+  armGestureUnlock() {
+    if (this.gestureArmed) return;
+    this.gestureArmed = true;
+    const attempt = () => {
+      this.unlock();
+      if (this.running) this.disarmGestureUnlock();
+    };
+    this.gestureAttempt = attempt;
+    this.gestureEvents = ['pointerdown', 'touchend', 'mousedown', 'keydown', 'click'];
+    this.gestureEvents.forEach(name => window.addEventListener(name, attempt, { capture: true, passive: true }));
+    // Returning from the background never creates a context, but it may resume
+    // one that is still alive; if iOS refuses, the next tap re-arms the gesture.
+    const resumed = () => {
+      if (!this.context || document.visibilityState !== 'visible') return;
+      try { if (this.context.state !== 'running') this.context.resume().catch(() => {}); } catch { /* No Web Audio. */ }
+      this.syncState();
+    };
+    document.addEventListener('visibilitychange', resumed);
+    window.addEventListener('pageshow', resumed);
+    window.addEventListener('focus', resumed);
+    this.gestureListeners = [['visibilitychange', resumed, document], ['pageshow', resumed, window], ['focus', resumed, window]];
+  }
+
+  disarmGestureUnlock() {
+    if (!this.gestureArmed) return;
+    this.gestureArmed = false;
+    this.gestureEvents?.forEach(name => window.removeEventListener(name, this.gestureAttempt, { capture: true }));
+    this.gestureListeners?.forEach(([name, handler, target]) => target.removeEventListener(name, handler));
+    this.gestureEvents = null;
+    this.gestureListeners = null;
+  }
+
+  /** Keep music/decode in step with the context lifecycle: iOS suspends the
+   *  context when Safari goes to the background or the silent switch is toggled. */
+  syncState() {
+    if (!this.context) return;
+    if (this.context.state === 'running') {
+      if (!this.laughReady && !this.laughLoading) { this.laughLoading = true; this.laughReady = this.loadLaugh(); }
+      if (this.readyCallbacks?.length) {
+        const callbacks = this.readyCallbacks; this.readyCallbacks = [];
+        callbacks.forEach(callback => { try { callback(); } catch { /* A missing sound must not break the match. */ } });
+      }
+      if (this.active && this.music && !this.timer) {
+        this.nextBeat = this.context.currentTime + .1;
+        this.timer = setInterval(() => this.scheduleMusic(), 80);
+        this.scheduleMusic();
+      }
+    } else {
+      if (this.timer) { clearInterval(this.timer); this.timer = null; this.nextBeat = 0; }
+      // iOS interrupts the context when Safari is backgrounded or the silent
+      // switch changes; try here (often inside a tap) and re-arm as a backstop.
+      try { this.context.resume().catch(() => {}); } catch { /* No Web Audio. */ }
+      this.armGestureUnlock();
+    }
+  }
+
+  /** Run a sound the moment the mixer is audible, even if iOS is still
+   *  releasing the AudioContext from the tap that started the match. */
+  whenRunning(callback) {
+    if (this.running) { callback(); return; }
+    this.readyCallbacks = this.readyCallbacks || [];
+    this.readyCallbacks.push(callback);
+    clearTimeout(this.readyTimer);
+    this.readyTimer = setTimeout(() => { this.readyCallbacks = []; }, 2000);
   }
 
   applyVolume() {
@@ -46,7 +127,7 @@ export class ArcadeAudio {
       if (!response.ok) throw new Error(`Laugh audio: ${response.status}`);
       this.laughBuffer = await this.context.decodeAudioData(await response.arrayBuffer());
       return true;
-    } catch (error) { console.warn('经典笑声加载失败', error); return false; }
+    } catch (error) { this.laughLoading = false; console.warn('经典笑声加载失败', error); return false; }
   }
 
   async playLaugh(duration = 3) {
@@ -54,6 +135,10 @@ export class ArcadeAudio {
     const epoch = this.laughEpoch;
     await this.unlock();
     if (!this.context || this.muted) return false;
+    // resume() settles a tick later on iOS; give the context a moment to run.
+    for (let i = 0; i < 20 && !this.running && !this.muted; i++) await new Promise(resolve => setTimeout(resolve, 25));
+    if (!this.running) return false;
+    if (!this.laughReady) this.laughReady = this.loadLaugh();
     await this.laughReady;
     if (!this.laughBuffer || this.muted || epoch !== this.laughEpoch) return false;
     const source = this.context.createBufferSource();
@@ -78,7 +163,7 @@ export class ArcadeAudio {
   }
 
   tone(frequency, duration = .12, type = 'triangle', gain = .12, when = 0, endFrequency = null, music = false) {
-    if (!this.context || this.muted) return;
+    if (!this.running || this.muted) return;
     const time = when || this.context.currentTime;
     const oscillator = this.context.createOscillator();
     const envelope = this.context.createGain();
@@ -94,7 +179,7 @@ export class ArcadeAudio {
   }
 
   noise(duration = .07, gain = .18, frequency = 1500, when = 0, music = false) {
-    if (!this.context || this.muted) return;
+    if (!this.running || this.muted) return;
     const time = when || this.context.currentTime;
     const noise = this.context.createBufferSource();
     noise.buffer = this.noiseBuffer;
@@ -109,7 +194,7 @@ export class ArcadeAudio {
   }
 
   sfx(name, detail = {}) {
-    if (!this.context || this.muted) return;
+    if (!this.running || this.muted) return;
     const now = this.context.currentTime;
     switch (name) {
       case 'select': this.tone(660, .06, 'square', .06); this.tone(880, .09, 'square', .045, now + .055); break;
@@ -149,14 +234,13 @@ export class ArcadeAudio {
     if (this.timer) clearInterval(this.timer);
     this.timer = null;
     if(!active)this.stopLaugh();
-    if (!active || !this.music || !this.context) return;
-    this.nextBeat = this.context.currentTime + .1;
-    this.timer = setInterval(() => this.scheduleMusic(), 80);
-    this.scheduleMusic();
+    // Music only starts once the context is actually running; syncState() is
+    // called again from onstatechange when iOS releases a suspended context.
+    this.syncState();
   }
 
   scheduleMusic() {
-    if (!this.context || !this.active || !this.music) return;
+    if (!this.running || !this.active || !this.music) return;
     // An original 116 BPM swingy pentatonic loop; a different 4-bar bass line
     // keeps the small oscillator band from sounding like a repeated alarm.
     const melody = [69, 0, 72, 74, 0, 72, 69, 67, 69, 0, 76, 74, 72, 0, 69, 0,

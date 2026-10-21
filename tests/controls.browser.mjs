@@ -46,7 +46,7 @@ try{
     assert.ok(header.every(e=>e.width>=44&&e.height>=40&&e.inside));
     await mobile.screenshot({path:`artifacts/header-${viewport.width}.png`});
     await mobile.locator('[data-mode="practice"]').click();await mobile.locator('#start-button').click();await mobile.waitForTimeout(200);
-    const layout=await mobile.locator('.touch-actions button').evaluateAll(buttons=>({
+    const layout=await mobile.locator('.touch-controls button').evaluateAll(buttons=>({
       count:buttons.length,inside:buttons.every(e=>{const r=e.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight&&r.width>=44&&r.height>=44;}),
       sizes:buttons.map(e=>{const r=e.getBoundingClientRect();return [r.width,r.height];}),overflow:document.documentElement.scrollWidth>innerWidth,
     }));

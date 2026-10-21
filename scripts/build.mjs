@@ -6,10 +6,10 @@ const output=resolve(root,'dist');
 if(output!==resolve(root,'dist'))throw new Error('Unexpected build output path');
 await rm(output,{recursive:true,force:true});
 await mkdir(output,{recursive:true});
-for(const name of ['index.html','style.css','.nojekyll'])await cp(resolve(root,name),resolve(output,name));
+for(const name of ['index.html','style.css','.nojekyll','manifest.webmanifest'])await cp(resolve(root,name),resolve(output,name));
 await cp(resolve(root,'src'),resolve(output,'src'),{recursive:true});
 await mkdir(resolve(output,'assets'),{recursive:true});
-for(const name of ['favicon.svg','milk-lobby.webp','milk-rooftops.webp','milk-rain.webp','milk-rooftops-thumb.webp','milk-rain-thumb.webp']){
+for(const name of ['favicon.svg','milk-lobby.webp','milk-rooftops-tall.webp','milk-rain-tall.webp','milk-rooftops-thumb.webp','milk-rain-thumb.webp','apple-touch-icon.png','icon-192.png','icon-512.png']){
   await stat(resolve(root,'assets',name));
   await cp(resolve(root,'assets',name),resolve(output,'assets',name));
 }

@@ -4,7 +4,7 @@ import {moveFor,styleOf} from './styles.js';
 function dodge(game,f,opponent,level,distance,towards,away){
   if(f.blinkCharges<=0||f.blinkTime>0||f.downTime>0||f.getUpTime>0||f.grappled||f.throwing||isSuperMove(f.attack?.move)||game.time<f.aiBlinkNext)return null;
   const cornered=f.x<WORLD.left+180||f.x>WORLD.right-180;
-  const hurt=f.stun>0&&f.stunKind==='hurt'&&(opponent.combo>=level.escapeCombo||cornered||f.hp<25);
+  const hurt=f.stun>0&&f.stunKind==='hurt'&&(opponent.combo>=level.escapeCombo||cornered||f.hp<WORLD.maxHealth*.25);
   const incoming=game.projectiles.find(p=>p.owner!==f.index&&p.life>0&&(
     p.field?Math.abs(p.x-f.x)<p.radius+30&&Math.abs(p.originY-f.y)<150&&p.age>=p.delay-.2:
     Math.abs(p.x-f.x)<285&&((p.x-f.x)*p.vx<0&&Math.abs(p.y-f.y+95)<110||p.vy>0&&p.y<f.y&&Math.abs(p.x-f.x)<85)));

@@ -223,7 +223,7 @@ try{
     await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[directionFinger,punchFinger]});
     await waitState(mobile,s=>s.lastMoves[0]===move);await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   }
-  assert.equal(await mobile.locator('.touch-actions button').count(),6);
+  assert.equal(await mobile.locator('.touch-controls button').count(),6);
   assert.equal(await mobile.locator('[data-action="uppercut"],[data-action="grab"]').count(),0);
   await resetPractice(mobile);
   await mobile.evaluate(async()=>{const {game}=await import('./src/app.js');window.__jumps=0;const previous=game.onEvent;game.onEvent=e=>{previous(e);if(e.type==='jump'&&e.index===0)window.__jumps++;};});
@@ -261,7 +261,7 @@ try{
   assert.ok((await state(mobile)).x[0]>landscapeStart+15);
   await mobile.screenshot({path:'artifacts/fight-mobile-landscape.png',fullPage:true});
   const bounds=await mobile.evaluate(()=>{
-    const buttons=[...document.querySelectorAll('.touch-actions button')].map(e=>e.getBoundingClientRect());
+    const buttons=[...document.querySelectorAll('.touch-controls button')].map(e=>e.getBoundingClientRect());
     const tools=[...document.querySelectorAll('.toolbar-controls button')].filter(e=>!e.hidden).map(e=>e.getBoundingClientRect());
     return {inside:buttons.every(b=>b.left>=0&&b.right<=innerWidth&&b.bottom<=innerHeight&&b.width>=44&&b.height>=44),overlap:buttons.some(a=>tools.some(b=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top))};
   });

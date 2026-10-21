@@ -44,21 +44,21 @@ test('all six variants have generous first-jump clearance and land without a sec
 test('crouching cleanly avoids high kick and all high milk projectiles',()=>{
   for(const move of ['kick','special','powerWave']){
     const {game,a,b}=arena();a.energy=100;if(move!=='kick')b.x=780;
-    step(game,[[],['down']]);game.beginAttack(a,move);advance(game,1.5,[[],['down']]);assert.equal(b.hp,100,move);
+    step(game,[[],['down']]);game.beginAttack(a,move);advance(game,1.5,[[],['down']]);assert.equal(b.hp,1000,move);
   }
 });
 
 test('takeoff evades a ground punch while an uppercut can still counter a jump',()=>{
   const dodge=arena();dodge.game.beginAttack(dodge.a,'jab');advance(dodge.game,.05);
-  step(dodge.game,[[],[]],[[],['jump']]);advance(dodge.game,.3);assert.equal(dodge.b.hp,100);
+  step(dodge.game,[[],[]],[[],['jump']]);advance(dodge.game,.3);assert.equal(dodge.b.hp,1000);
   const counter=arena();counter.b.y=WORLD.floor-110;counter.b.vy=-160;
-  counter.game.beginAttack(counter.a,'uppercut');advance(counter.game,.35);assert.ok(counter.b.hp<100);assert.ok(counter.b.vy<0);
+  counter.game.beginAttack(counter.a,'uppercut');advance(counter.game,.35);assert.ok(counter.b.hp<1000);assert.ok(counter.b.vy<0);
 });
 
 test('jumping clears sweeps and low milk shockwaves',()=>{
   for(const move of ['sweep','pulse']){
     const {game,a,b}=arena();a.energy=100;step(game,[[],[]],[[],['jump']]);advance(game,.1);
-    game.beginAttack(a,move);advance(game,.4);assert.equal(b.hp,100,move);
+    game.beginAttack(a,move);advance(game,.4);assert.equal(b.hp,1000,move);
   }
 });
 
@@ -66,7 +66,7 @@ test('low attacks break standing guard but crouch guard blocks them',()=>{
   for(const crouch of [false,true]){
     const {game,a,b,events}=arena();const held=[[],crouch?['guard','down']:['guard']];
     step(game,held);game.beginAttack(a,'sweep');advance(game,.5,held);
-    assert.equal(events.some(e=>e.type==='block'),crouch);assert.ok(crouch?b.hp>99:b.hp>94&&b.hp<96);
+    assert.equal(events.some(e=>e.type==='block'),crouch);assert.ok(crouch?b.hp>990:b.hp>940&&b.hp<960);
   }
 });
 
@@ -74,7 +74,7 @@ test('red ground projectile obeys low guard height',()=>{
   for(const crouch of [false,true]){
     const {game,a,b,events}=arena({p1:'red'});b.x=800;a.energy=100;const held=[[],crouch?['down','guard']:['guard']];
     game.beginAttack(a,'special');advance(game,1,held);assert.equal(events.some(e=>e.type==='block'),crouch);
-    assert.ok(crouch?b.hp>98:b.hp>90&&b.hp<94);
+    assert.ok(crouch?b.hp>980:b.hp>900&&b.hp<940);
   }
 });
 
@@ -82,7 +82,7 @@ test('overhead divekick hits a croucher while standing guard can block it',()=>{
   for(const crouch of [false,true]){
     const {game,a,b,events}=arena();a.y=WORLD.floor-85;a.vy=150;const held=[[],crouch?['down','guard']:['guard']];
     step(game,held);game.beginAttack(a,'diveKick');advance(game,.45,held);
-    assert.equal(events.some(e=>e.type==='block'),!crouch);assert.ok(crouch?b.hp>93&&b.hp<96:b.hp>99);
+    assert.equal(events.some(e=>e.type==='block'),!crouch);assert.ok(crouch?b.hp>930&&b.hp<960:b.hp>990);
   }
 });
 
@@ -90,7 +90,7 @@ test('close throw breaks guard but cannot grab an airborne opponent',()=>{
   for(const airborne of [false,true]){
     const {game,a,b,events}=arena();b.x=a.x+WORLD.pushDistance;if(airborne){b.y-=140;b.vy=-120;}
     game.beginAttack(a,'grab');advance(game,1.1,[[],['guard']]);
-    assert.ok(airborne?b.hp===100:b.hp>92&&b.hp<95);assert.equal(events.some(e=>e.type==='block'),false);
+    assert.ok(airborne?b.hp===1000:b.hp>920&&b.hp<950);assert.equal(events.some(e=>e.type==='block'),false);
     if(!airborne)assert.ok(b.x<a.x);
   }
 });
@@ -121,7 +121,7 @@ test('three successive confirmed J presses produce the complete three-hit chain'
     step(game,[[],[]],[['jab'],[]]);until(game,()=>a.attack?.move===want&&a.hasHit);
     assert.equal(game.matchStats[0].hits,i+1);
   }
-  assert.equal(events.filter(e=>e.type==='hit').length,3);assert.ok(b.hp>88&&b.hp<92);
+  assert.equal(events.filter(e=>e.type==='hit').length,3);assert.ok(b.hp>880&&b.hp<920);
 });
 
 test('J K L I spends one full gauge across the skill and six-hit combo super',()=>{
@@ -133,7 +133,7 @@ test('J K L I spends one full gauge across the skill and six-hit combo super',()
   assert.ok(a.energy<100);assert.ok(game.moveCost(a,'superFinish')<=a.energy);
   step(game,[[],[]],[['super'],[]]);until(game,()=>a.attack?.move==='superFinish');advance(game,1.7);
   assert.ok(events.filter(e=>e.type==='hit'&&e.move==='superFinish').length>=5);
-  assert.ok(game.matchStats[0].maxCombo>=8);assert.ok(b.hp>70&&b.hp<80);assert.ok(a.energy<25);
+  assert.ok(game.matchStats[0].maxCombo>=8);assert.ok(b.hp>700&&b.hp<800);assert.ok(a.energy<25);
 });
 
 test('five-hit rush, three-hit rising and four-hit storm supers all connect',()=>{
@@ -141,7 +141,7 @@ test('five-hit rush, three-hit rising and four-hit storm supers all connect',()=
     const {game,a,b,events}=arena();a.energy=100;if(move==='superStorm')b.x=1000;
     assert.ok(game.beginAttack(a,move));advance(game,2);
     assert.equal(events.filter(e=>e.type==='hit'&&e.move===move).length,count,move);
-    assert.ok(a.energy<15);assert.ok(b.hp>80&&b.hp<88);
+    assert.ok(a.energy<15);assert.ok(b.hp>800&&b.hp<880);
   }
 });
 

@@ -32,7 +32,7 @@ try{
   await writeFile('artifacts/six-styles.png',Buffer.from(result.png,'base64'));
   // Block both large maps: neither can hold the start button hostage.
   const fallback=await browser.newPage();
-  await fallback.route(/milk-(rain|rooftops)\.webp$/,route=>route.abort());
+  await fallback.route(/milk-(rain|rooftops)(-tall)?\.webp$/,route=>route.abort());
   await fallback.goto(base,{waitUntil:'domcontentloaded'});await fallback.waitForFunction(()=>!document.getElementById('start-button').disabled);
   await fallback.locator('#start-button').click();await fallback.waitForFunction(async()=>{const {game}=await import('./src/app.js');return game.phase==='fight';});
   assert.equal(await fallback.locator('#home-overlay').isHidden(),true);await fallback.close();

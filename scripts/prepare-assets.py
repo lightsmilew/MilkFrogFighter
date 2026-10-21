@@ -124,3 +124,7 @@ image.thumbnail((768,432),Image.Resampling.LANCZOS)
 image.save(ASSETS/'milk-lobby.webp','WEBP',quality=64,method=6)
 for path in [*OUT.glob('*.webp'),*ASSETS.glob('*thumb.webp'),ASSETS/'milk-lobby.webp',ASSETS/'milk-rooftops.webp',ASSETS/'milk-rain.webp']:
     print(path.relative_to(ROOT),path.stat().st_size)
+
+if all((ASSETS/'source'/f'{name}-tall.png').exists() for name in ['milk-rooftops','milk-rain']):
+    import runpy
+    runpy.run_path(str(ROOT/'scripts'/'prepare-stages.py'))

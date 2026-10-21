@@ -44,14 +44,14 @@ test('confirmed punches branch into followup kick, second-punch ender and kick-t
 
 test('wind clone is delayed, travels independently and deals a blockable hit',()=>{
   const {game,a,b}=arena('green');b.x=850;game.beginAttack(a,'special');advance(game,.15);
-  assert.equal(game.projectiles[0].visual,'clone');assert.equal(b.hp,100);
-  advance(game,.8);assert.ok(b.hp<100);assert.equal(a.x,500);
+  assert.equal(game.projectiles[0].visual,'clone');assert.equal(b.hp,1000);
+  advance(game,.8);assert.ok(b.hp<1000);assert.equal(a.x,500);
 });
 
 test('fire pillars telegraph before dealing damage and can be escaped vertically',()=>{
   const {game,a,b}=arena('red');b.x=745;game.beginAttack(a,'pulse');advance(game,.23);
-  assert.equal(game.projectiles.length,3);assert.equal(b.hp,100);
-  b.y=WORLD.floor-250;b.vy=-400;advance(game,.6);assert.equal(b.hp,100);
+  assert.equal(game.projectiles.length,3);assert.equal(b.hp,1000);
+  b.y=WORLD.floor-250;b.vy=-400;advance(game,.6);assert.equal(b.hp,1000);
 });
 
 test('red armor absorbs one light hit but cannot repeatedly ignore followups',()=>{
@@ -64,14 +64,14 @@ test('red armor absorbs one light hit but cannot repeatedly ignore followups',()
 
 test('spiral counter reverses one strike and still loses to a throw',()=>{
   const {game,a,b,events}=arena();game.beginAttack(a,'stance');
-  game.hit(b,a,moveFor(b.character,'jab'),'jab',null,200);assert.equal(a.hp,100);assert.ok(b.hp<100);
+  game.hit(b,a,moveFor(b.character,'jab'),'jab',null,200);assert.equal(a.hp,1000);assert.ok(b.hp<1000);
   assert.equal(events.filter(e=>e.type==='counter').length,1);
-  a.invincible=0;game.beginAttack(a,'stance');game.hit(b,a,moveFor(b.character,'grab'),'grab',null,201);assert.ok(a.hp<100);
+  a.invincible=0;game.beginAttack(a,'stance');game.hit(b,a,moveFor(b.character,'grab'),'grab',null,201);assert.ok(a.hp<1000);
 });
 
 test('phantom rush warps behind an opponent instead of just recoloring a dash',()=>{
   const {game,a,b}=arena('purple');b.x=780;game.beginAttack(a,'rushSkill');advance(game,.12);
-  assert.ok(a.x>b.x);assert.equal(a.facing,-1);advance(game,.25);assert.ok(b.hp<100);
+  assert.ok(a.x>b.x);assert.equal(a.facing,-1);advance(game,.25);assert.ok(b.hp<1000);
 });
 
 test('moon well pulls an opponent toward its center and expires',()=>{
@@ -80,14 +80,14 @@ test('moon well pulls an opponent toward its center and expires',()=>{
 });
 
 test('returning heart can hit once outward and once returning, healing only once',()=>{
-  const {game,a,b,events}=arena('pink');a.hp=70;b.x=780;game.beginAttack(a,'special');advance(game,1.6);
-  assert.equal(events.filter(e=>e.type==='hit').length,2);assert.equal(a.hp,72);assert.ok(b.hp<94);
+  const {game,a,b,events}=arena('pink');a.hp=700;b.x=780;game.beginAttack(a,'special');advance(game,1.6);
+  assert.equal(events.filter(e=>e.type==='hit').length,2);assert.equal(a.hp,720);assert.ok(b.hp<940);
 });
 
 test('three petal marks burst, reset their stack and heal the caster',()=>{
-  const {game,a,b,events}=arena('pink');a.hp=70;
+  const {game,a,b,events}=arena('pink');a.hp=700;
   for(let i=0;i<3;i++)game.hit(a,b,moveFor(a.character,'jab'),'jab',null,300+i);
-  assert.equal(b.petals,0);assert.equal(a.hp,72);assert.ok(events.some(e=>e.type==='bloom'));
+  assert.equal(b.petals,0);assert.equal(a.hp,720);assert.ok(events.some(e=>e.type==='bloom'));
 });
 
 test('three frost hits freeze briefly, clear their stack and then recover',()=>{
@@ -104,7 +104,7 @@ test('ice mirror intercepts enemy shots and breaks after absorbing enough',()=>{
     game.projectiles.push({owner:1,x:wall.x,y:wall.y,vx:-1,vy:0,radius:10,life:1,age:0,level:'high',originY:WORLD.floor,config:moveFor('classic','special'),move:'special'});
     game.updateProjectiles(1/60);
   }
-  assert.ok(wall.life<=0);assert.equal(a.hp,100);
+  assert.ok(wall.life<=0);assert.equal(a.hp,1000);
 });
 
 test('normal AI confirms extended combos and uses real meter without hidden damage bonuses',()=>{
@@ -112,7 +112,7 @@ test('normal AI confirms extended combos and uses real meter without hidden dama
     const {game,a,b}=arena(id);game.mode='local';game.difficulty='normal';a.energy=100;
     for(let i=0;i<60*20&&game.phase==='fight';i++)game.tick(1/60,[game.ai(a,b,1/60),none()]);
     assert.ok(a.aiStats.confirms>=2,`${id} confirms ${a.aiStats.confirms}`);
-    assert.ok(game.matchStats[0].maxCombo>=3,`${id} max combo`);assert.ok(b.hp<75,`${id} pressure`);
+    assert.ok(game.matchStats[0].maxCombo>=3,`${id} max combo`);assert.ok(b.hp<750,`${id} pressure`);
     assert.ok(a.energy>=0&&a.energy<=100);
   }
 });
@@ -129,13 +129,13 @@ test('holding guard blocks every hit of a rush super without leaking through blo
   const {game,a,b,events}=arena();b.x=500+WORLD.pushDistance;
   game.beginAttack(a,'superRush');
   for(let i=0;i<100;i++)game.tick(1/60,[none(),{held:new Set(['guard']),pressed:new Set()}]);
-  assert.equal(events.filter(e=>e.type==='block').length,5);assert.equal(game.matchStats[0].hits,0);assert.ok(b.hp>97);
+  assert.equal(events.filter(e=>e.type==='block').length,5);assert.equal(game.matchStats[0].hits,0);assert.ok(b.hp>970);
 });
 
 test('countering a distant projectile reflects a real shot instead of damaging its caster remotely',()=>{
   const {game,a,b}=arena();b.x=950;game.beginAttack(a,'stance');
   const config=moveFor('classic','special');
   game.hit(b,a,config,'special',{owner:1,x:530,y:510,vx:-690,vy:0,radius:16,level:'high',originY:WORLD.floor,config,move:'special'},900);
-  assert.equal(a.hp,100);assert.equal(b.hp,100);assert.equal(game.projectiles[0].owner,0);assert.ok(game.projectiles[0].vx>0);
-  advance(game,1);assert.ok(b.hp<100);
+  assert.equal(a.hp,1000);assert.equal(b.hp,1000);assert.equal(game.projectiles[0].owner,0);assert.ok(game.projectiles[0].vx>0);
+  advance(game,1);assert.ok(b.hp<1000);
 });

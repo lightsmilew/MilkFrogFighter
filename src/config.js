@@ -1,5 +1,5 @@
-// Viewport dimensions stay fixed; world coordinates extend above and sideways.
-export const WORLD = Object.freeze({ width:1280,height:720,arenaWidth:3840,top:-700,floor:610,left:64,right:3776,spawnX:1920,gravity:2050,fighterScale:.7,spriteSize:175,standHeight:145.6,crouchHeight:91,pushDistance:75.6,maxSeparation:1600,damageScale:.44,roundSeconds:90 });
+// Standard viewport reference; the camera adapts to the actual container ratio.
+export const WORLD = Object.freeze({ width:1280,height:720,arenaWidth:3840,top:-1500,floor:610,left:64,right:3776,spawnX:1920,gravity:2050,fighterScale:.7,spriteSize:175,standHeight:145.6,crouchHeight:91,pushDistance:75.6,maxSeparation:1600,maxHealth:1000,damageScale:.44,roundSeconds:90 });
 export const MOVEMENT=Object.freeze({runMultiplier:2.15,dashForward:1180,dashBack:1020,dashDuration:.20,airJumpRatio:1,blinkSpeed:2300,blinkDuration:.16,blinkCharges:2,blinkRecharge:3});
 
 export const PLATFORMS = Object.freeze([
@@ -16,8 +16,8 @@ export const PLATFORMS = Object.freeze([
 ]);
 
 export const STAGES=Object.freeze([
-  {id:'street',name:'晴日老街',subtitle:'午后暖阳 · 棚架与屋檐',weather:'sun',image:'milk-rooftops.webp',platforms:PLATFORMS},
-  {id:'rain',name:'雨巷街口',subtitle:'细雨街灯 · 高低露台',weather:'rain',image:'milk-rain.webp',platforms:PLATFORMS.map((p,i)=>({...p,x:p.x+(i%2?55:-40),y:p.y+(p.kind==='roof'?-25:0)}))},
+  {id:'street',name:'晴日老街',subtitle:'午后暖阳 · 棚架与屋檐',weather:'sun',image:'milk-rooftops-tall.webp',thumbnail:'milk-rooftops-thumb.webp',imageTop:-2140,imageBottom:1700,platforms:PLATFORMS},
+  {id:'rain',name:'雨巷街口',subtitle:'细雨街灯 · 高低露台',weather:'rain',image:'milk-rain-tall.webp',thumbnail:'milk-rain-thumb.webp',imageTop:-2140,imageBottom:1700,platforms:PLATFORMS.map((p,i)=>({...p,x:p.x+(i%2?55:-40),y:p.y+(p.kind==='roof'?-25:0)}))},
 ]);
 export const stageById=id=>STAGES.find(stage=>stage.id===id)||STAGES[0];
 

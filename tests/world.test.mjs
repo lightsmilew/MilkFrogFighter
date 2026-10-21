@@ -64,10 +64,25 @@ test('camera expands its vertical view to keep ground and rooftop fighters visib
   }
 });
 
+test('a taller resource HUD on a small phone still leaves rooftop and ground fighters visible',()=>{
+  const {a,b}=arena();a.y=-400;b.y=610;const camera=createCamera();camera.safeTop=326;
+  updateCamera(camera,[a,b],0,true);
+  for(const f of [a,b]){assert.ok((f.y-WORLD.standHeight-camera.y)*camera.scale>=326);assert.ok((f.y-camera.y)*camera.scale<=645);}
+});
+
+test('wide fullscreen cameras reveal the expanded world and respect both stage edges',()=>{
+  const {a,b}=arena();const camera=createCamera();camera.viewportWidth=1728;
+  for(const [x1,x2] of [[100,450],[2600,3000],[3300,3700]]){
+    a.x=x1;b.x=x2;updateCamera(camera,[a,b],0,true);
+    assert.ok(camera.x>=0&&camera.x+1728/camera.scale<=WORLD.arenaWidth+1);
+    for(const f of [a,b]){const x=(f.x-camera.x)*camera.scale;assert.ok(x>0&&x<1728);}
+  }
+});
+
 test('two stored flashes cross an opponent, dodge a punch and refill sequentially',()=>{
   const {game,a,b,events}=arena();game.beginAttack(b,'jab');
   step(game,[['right'],[]],[['blink'],[]]);advance(game,.22);
-  assert.ok(a.x>b.x);assert.equal(a.hp,100);assert.equal(a.blinkCharges,1);assert.equal(a.blinkCooldown,0);
+  assert.ok(a.x>b.x);assert.equal(a.hp,1000);assert.equal(a.blinkCharges,1);assert.equal(a.blinkCooldown,0);
   step(game,[['right'],[]],[['blink'],[]]);assert.equal(a.blinkCharges,0);assert.ok(a.blinkCooldown>1);
   const count=events.filter(e=>e.type==='blink').length;advance(game,.2);step(game,[[],[]],[['blink'],[]]);assert.equal(events.filter(e=>e.type==='blink').length,count);
   assert.equal(MOVEMENT.blinkRecharge,3);
@@ -86,7 +101,7 @@ test('throw follows an airborne arc and lands on the opposite side exactly once'
   for(const direction of [1,-1]){
     const {game,a,b,events}=arena();a.x=1500;b.x=a.x+direction*WORLD.pushDistance;a.facing=direction;b.facing=-direction;
     game.beginAttack(a,'grab');advance(game,.4);
-    assert.ok(b.grappled);assert.ok(b.y<WORLD.floor-100);assert.equal(b.hp,100);
+    assert.ok(b.grappled);assert.ok(b.y<WORLD.floor-100);assert.equal(b.hp,1000);
     advance(game,.5);assert.equal(b.grappled,false);assert.ok((b.x-a.x)*direction<0);assert.equal(b.reaction.type,'slam');assert.ok(b.downTime>0);
     assert.equal(events.filter(e=>e.type==='hit'&&e.move==='grab').length,1);
     advance(game,1);assert.ok(b.grounded);assert.equal(b.getUpTime,0);assert.equal(b.state,'idle');
@@ -117,9 +132,9 @@ test('knocked-down fighters have a visible get-up and cannot be corner stunlocke
 test('pink heals once per skill and blue produces a temporary freeze',()=>{
   for(const p1 of ['pink','blue']){
     const {game}=arena();game.start({mode:'local',p1});game.phase='fight';game.platforms=[];
-    const [a,b]=game.fighters;a.x=500;b.x=690;a.energy=100;a.hp=70;game.beginAttack(a,'special');advance(game,.48);
-    assert.ok(b.hp<100,p1);
-    if(p1==='pink'){assert.equal(a.hp,72);assert.ok(b.charm>0);assert.equal(b.reaction.type,'charm');}
+    const [a,b]=game.fighters;a.x=500;b.x=690;a.energy=100;a.hp=700;game.beginAttack(a,'special');advance(game,.48);
+    assert.ok(b.hp<1000,p1);
+    if(p1==='pink'){assert.equal(a.hp,720);assert.ok(b.charm>0);assert.equal(b.reaction.type,'charm');}
     else{assert.ok(b.frost>0);assert.ok(b.slow>0);assert.equal(b.reaction.type,'freeze');}
     advance(game,2);assert.equal(b.frost,0);assert.equal(b.charm,0);
   }
@@ -128,7 +143,7 @@ test('pink heals once per skill and blue produces a temporary freeze',()=>{
 test('low attacks work on the same raised platform instead of treating it as a jump',()=>{
   const {game,a,b}=arena('street',true);game.platforms=[{id:'test',x:350,y:410,w:500}];
   for(const f of [a,b]){f.y=410;f.platformId='test';}
-  game.beginAttack(a,'sweep');advance(game,.3);assert.ok(b.hp<100);
+  game.beginAttack(a,'sweep');advance(game,.3);assert.ok(b.hp<1000);
 });
 
 test('both maps initialize their own ledges and invalid map ids have a fallback',()=>{

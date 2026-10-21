@@ -1,15 +1,24 @@
-# 扩展街区生成提示词
+# 高地图重绘记录
 
-工具：内置 imagegen，无 CLI 或外部图像 API。
+2026-10-21，使用内置 imagegen，替换战斗场景的矮全景。原始输出保存在 `assets/source/milk-rooftops-tall.png`、`assets/source/milk-rain-tall.png`，两张实际输出均为 1254×1254。运行 WebP 保持原生尺寸，质量 80，分别为 286778 / 284200 字节；菜单预览为 12412 / 11596 字节。
 
-晴天参考：`assets/source/milk-street.png`；最终保存为 `assets/source/milk-rooftops.png`，WebP 为 `assets/milk-rooftops.webp`。
+晴景以原晴日街道为编辑参考：保留商铺、棚架、自行车和手绘质感，重新画出大面积高空云层以及完整石板路前景。雨景以新晴景为编辑目标、原雨景为配色参考，保持新构图，换成蓝灰厚云、亮窗、灯光与湿地反射。雨丝不烘焙到图片，由游戏动态绘制。
 
-```text
-Use case: identity-preserve / illustration-story. Asset type: a very wide panoramic background for the expanded world of the existing milkfrog side-view fighting game. Use the supplied old Chinese milk-bar street painting as STYLE AND PLACE reference. Create an adjoining continuous long neighborhood street panorama, landscape aspect ratio about 8:3 (ideally 3840 by 1440). Preserve warm nostalgic hand-painted 1990s animation/gouache artwork, rich muted mint green storefronts, rusty orange fabric awnings, pale ochre plaster, wooden balconies, leafy green trees, amber late afternoon sunlight. No characters. Extend a whole block left to right with milk bar, fabric canopy, apartment terraces, tiled low roofs, market kiosk and rooftop planters, distant hill and pale blue sky with fluffy cream clouds. IMPORTANT side-view platform-fighter composition: upper half is mostly beautiful open sky, hanging utility wires and distant higher rooftops, leaving clear air for jumps; building facades and awnings occupy mainly the bottom half, and a continuous broad empty tan street fighting ground occupies only bottom 12 percent of total image. Side elevation, no road disappearing into distance. Render roofs/awnings as scenery, gameplay platforms will be drawn separately; do not paint floating islands or game UI. Keep the lower center relatively quiet so small yellow fighters read clearly. Coherent long panorama, no mirrored repeats, no collage seams, no distortion, no blank margins. No words, lettering, logos, HUD, watermark, frames or people. Preserve the reference's detailed painted textures and confident architectural lines, avoid shiny 3D and generic concept-art effects.
-```
-
-雨天参考：`assets/source/milk-rooftops.png`；最终保存为 `assets/source/milk-rain.png`，WebP 为 `assets/milk-rain.webp`。雨滴和涟漪在游戏中实时绘制。
+核心生成约束：
 
 ```text
-Use case: lighting-weather. Edit the supplied panoramic hand-painted Chinese neighborhood street game background into a rainy-day version of the same place. Preserve the exact long street geometry, architecture, wide camera and buildings, sky space and empty fighting ground. Keep warm nostalgic 1990s gouache animation background, not a photo or shiny 3D. Replace golden sunshine with muted blue-gray overcast afternoon, low soft rain clouds; add visibly wet ochre pavement with gentle puddle reflections of windows and rusty orange awnings; windows have soft warm light, roof tiles and leaves are wet and darker sage green. Beautiful gentle rainy neighborhood mood, readable medium contrast for small yellow fighters. No people or umbrellas or characters. IMPORTANT do NOT paint rain streaks in the image: rain drops and splash ripples will be animated in the game so the background itself should show wet surfaces and rainy lighting only. Preserve panorama aspect ratio and composition. No text, watermark, UI, borders, lightning or storm disaster.
+Production SQUARE side-view fighting game background. Preserve the recognizable
+shops, tiled roofs, awnings, bottles, plants, lamp posts and bicycle of the
+reference panorama. Expand vertically with fully painted high sky and natural
+stone paving foreground. Continuous hand-painted atmosphere, no blank region,
+no flat rectangular bands, no stretched pixels, no hard seams. No characters,
+no UI, no text, no borders, no added gameplay platforms.
+
+Rain variant: preserve the new sunny composition and street/roof heights.
+Replace the summer sky with immense layered blue-gray rain clouds, subtle haze,
+wet paving and warm window/lantern reflections. No baked-in rain streaks.
 ```
+
+美术映射覆盖世界 y=-2140 至 1700，共 3840 单位，与世界宽度 3840 相同，保持图像比例。极端屏幕比例使用云层 / 铺路的反射余量，空地双方距离导致镜头越过地图右侧时同样补足绘画；常规高跳画面直接使用新绘天空。删除旧的顶部纯色衔接和底部铺路条拉伸。物理高度上限改为 -1500，使最高露台上的二段跳不会撞上旧的 -700 天花板。
+
+`scripts/prepare-stages.py` 只负责格式压缩和菜单缩略图准备。旧的 `prepare-assets.py` 在新源图存在时也会调用它，避免重做角色图集时覆盖菜单预览。构建只复制新 WebP 与缩略图，PNG 和旧全景不进入部署包。地图仍在开打就绪后按需加载，失败时保留原有回退画面。
