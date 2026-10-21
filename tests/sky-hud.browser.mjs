@@ -1,3 +1,4 @@
+import {openSetup,launchMatch} from './ui-helpers.mjs';
 import assert from 'node:assert/strict';
 import {mkdir,writeFile} from 'node:fs/promises';
 const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
@@ -32,7 +33,7 @@ try{
  });
  for(const sample of sky){assert.ok(sample.diffs.every(n=>n<25),`${sample.id} sky seam: ${sample.diffs}`);assert.equal(sample.artHeight,sample.artWidth);assert.equal(sample.worldHeight,3840);assert.ok(sample.mixedEdgeColors>15);assert.ok(sample.covered&&sample.peakY<-700,JSON.stringify({id:sample.id,covered:sample.covered,peakY:sample.peakY,cameraY:sample.cameraY}));
   await writeFile(`artifacts/sky-extension-${sample.id}.png`,Buffer.from(sample.png,'base64'));await writeFile(`artifacts/sky-high-jump-${sample.id}.png`,Buffer.from(sample.peak,'base64'));delete sample.png;delete sample.peak;}
- await page.locator('[data-mode="practice"]').click();await page.locator('#start-button').click();
+ await openSetup(page);await page.locator('[data-mode="practice"]').click();await launchMatch(page);
  assert.equal(await page.locator('#pause-button svg').count(),1);assert.equal(await page.locator('#fullscreen-button svg').count(),1);
  await page.locator('#fullscreen-button').click();assert.equal(await page.locator('#fullscreen-button').getAttribute('data-icon'),'collapse');
  await page.locator('#pause-button').click();assert.equal(await page.locator('#pause-button').getAttribute('data-icon'),'play');

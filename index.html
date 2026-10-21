@@ -19,7 +19,7 @@
   <link rel="modulepreload" href="./src/renderer.js">
   <link rel="stylesheet" href="./style.css">
 </head>
-<body>
+<body data-screen="home">
   <header class="site-header">
     <a class="brand" href="./" aria-label="奶蛙街头首页">
       <img src="./assets/favicon.svg" width="42" height="42" alt="">
@@ -37,46 +37,50 @@
   </header>
 
   <main class="page-shell">
-    <section class="masthead" aria-label="街角擂台">
-      <div><p class="eyebrow">MILKFROG FIGHT CLUB</p><h1>选只蛙，<span>选条街。</span></h1></div>
-      <div class="masthead-right"><span class="edition">六位选手 · 两条街区</span></div>
-    </section>
-
     <section class="arcade" id="arcade" aria-label="奶蛙格斗游戏">
-      <div class="arcade-top">
-        <div class="mode-tabs" role="group" aria-label="对战模式">
-          <button class="mode-tab active" data-mode="ai" aria-pressed="true"><span>01</span> 人机对战</button>
-          <button class="mode-tab" data-mode="local" aria-pressed="false"><span>02</span> 同屏双人</button>
-          <button class="mode-tab" data-mode="practice" aria-pressed="false"><span>03</span> 自由练习</button>
-        </div>
-        <div class="arcade-toolbar"><div class="toolbar-controls" id="screen-controls"><button id="pause-button" class="screen-button" aria-label="暂停游戏" title="暂停 Esc" hidden>Ⅱ</button><button id="fullscreen-button" class="screen-button" aria-label="切换全屏" title="全屏">⛶</button></div><label class="difficulty-label" for="difficulty">对手脾气 <select id="difficulty"><option value="easy">散步蛙 · 轻松</option><option value="normal" selected>认真蛙 · 普通</option><option value="hard">暴躁蛙 · 挑战</option></select></label></div>
+      <div class="arcade-top" id="match-toolbar" hidden>
+        <span class="match-summary" id="match-summary"></span>
+        <div class="arcade-toolbar"><div class="toolbar-controls" id="screen-controls"><button id="pause-button" class="screen-button" aria-label="暂停游戏" title="暂停 Esc" hidden>Ⅱ</button><button id="fullscreen-button" class="screen-button" aria-label="切换全屏" title="全屏">⛶</button></div></div>
       </div>
 
-      <div class="stage-picker" id="stage-picker"><span class="stage-picker-label">在哪里开打<small>二段跳上屋檐 · 闪移换身位</small></span><div class="stage-options" id="stage-options" role="group" aria-label="选择地图"></div></div>
-
       <div class="game-screen" id="game-screen">
-        <canvas id="game" width="1280" height="720" tabindex="0" aria-label="奶蛙街头格斗画面。回车开始，WASD移动，双击方向冲刺，J拳、K脚、U升龙、O抱摔、L技能、I必杀，空格防御，Esc暂停。"></canvas>
+        <canvas id="game" width="1280" height="720" tabindex="0" aria-label="奶蛙街头格斗画面。回车开始，WASD移动，双击方向冲刺，J拳、K脚、上加J升龙、下加J抱摔、L技能、I必杀、E闪移，Q防御，Esc暂停。"></canvas>
         <div class="screen-grain" aria-hidden="true"></div>
-        <div class="stage-label" id="stage-label"><span class="live-dot"></span><span id="stage-label-text">晴日老街</span></div>
+        <div class="stage-label" id="stage-label" hidden><span class="live-dot"></span><span id="stage-label-text">晴日老街</span></div>
 
         <div class="home-overlay" id="home-overlay">
           <div class="home-copy">
             <span class="home-kicker">一肚子奶气，一身好功夫。</span>
             <h2>笑什么，<br>上来<span>打一架。</span></h2>
             <p>街坊都到齐了，就等你出手。</p>
-            <button id="start-button" class="primary-button"><span class="coin-icon" aria-hidden="true">蛙</span> 投币开打 <span aria-hidden="true">↗</span></button>
-            <span class="enter-hint" id="enter-hint">或按 <kbd>ENTER</kbd> 开始 · 硬币我请</span>
+            <button id="start-button" class="primary-button" disabled><span class="coin-icon" aria-hidden="true">蛙</span> 投币开打 <span aria-hidden="true">↗</span></button>
+            <span class="enter-hint" id="enter-hint">或按 <kbd>ENTER</kbd> 投币 · 硬币我请</span>
             <span class="loading-hint" id="loading-hint" role="status">正在备好擂台与角色…</span>
+            <button id="retry-load" class="underlined-button" hidden>重试加载 ↗</button>
           </div>
           <div class="seal" aria-hidden="true"><small>纯正原味</small><strong>100%</strong><span>奶气含量</span></div>
           <span class="hero-caption" aria-hidden="true">THE SMALL FROG WITH A BIG ATTITUDE.</span>
         </div>
 
+        <section class="setup-panel" id="setup-panel" aria-labelledby="setup-heading" hidden>
+          <div class="setup-heading"><div class="setup-title"><p class="eyebrow">BEFORE THE FIRST PUNCH</p><h1 id="setup-heading" tabindex="-1">先定玩法，再挑搭子。</h1></div><span class="setup-caption">选好玩法和街区，就能开打。</span><button id="home-button" class="setup-back" aria-label="返回投币界面">← 返回</button></div>
+          <div class="setup-layout">
+            <section class="setup-block setup-mode" id="setup-mode-pane" aria-labelledby="mode-heading"><h2 id="mode-heading"><span>01</span> 玩法</h2><div class="mode-tabs" role="group" aria-label="对战模式">
+              <button class="mode-tab active" data-mode="ai" aria-pressed="true"><span>01 / SOLO</span><strong>人机对战</strong><small>和街坊过两招</small></button>
+              <button class="mode-tab" data-mode="local" aria-pressed="false"><span>02 / VERSUS</span><strong>同屏双人</strong><small>键盘或两只手柄</small></button>
+              <button class="mode-tab" data-mode="practice" aria-pressed="false"><span>03 / PRACTICE</span><strong>自由练习</strong><small>无限奶气，放心练</small></button>
+            </div><p class="setup-mode-note" id="setup-mode-note">三局两胜，每局 90 秒。</p></section>
+            <section class="setup-block setup-difficulty" id="setup-difficulty-pane"><h2 id="difficulty-heading"><span>02</span> 脾气</h2><label class="difficulty-label" id="setup-difficulty" for="difficulty"><select id="difficulty" aria-labelledby="difficulty-heading"><option value="easy">散步蛙 · 轻松</option><option value="normal" selected>认真蛙 · 普通</option><option value="hard">暴躁蛙 · 挑战</option></select></label><p class="setup-mode-note">轻松慢慢练，普通过过招，挑战认真打。</p></section>
+            <section class="setup-block setup-stage" id="setup-stage-pane" aria-labelledby="stage-heading"><h2 id="stage-heading"><span>03</span> 街区</h2><div class="stage-picker" id="stage-picker"><div class="stage-options" id="stage-options" role="group" aria-label="选择地图"></div></div><p class="setup-map-note">二段跳上屋檐，闪移换个身位。</p></section>
+          </div>
+          <div class="setup-launch" id="setup-launch"><div class="setup-launch-inner"><div><strong id="setup-summary" aria-live="polite">奶蛙 VS 奶绿</strong><span id="setup-summary-detail">人机对战 · 晴日老街</span><small id="setup-loading" role="status">角色热身中，可以先选配置。</small></div><div class="setup-launch-actions"><button id="setup-roster-link" class="setup-roster-link">去下方选角色 ↓</button><button id="fight-button" class="primary-button" disabled>就这局，开打 <span aria-hidden="true">↗</span></button></div></div></div>
+        </section>
+
         <div class="center-overlay" id="pause-overlay" hidden>
           <div class="overlay-card">
             <span class="eyebrow">TAKE A MILK BREAK</span><h2>歇口气，喝口奶。</h2><p>街坊等着呢，随时回来接着打。</p>
             <button class="primary-button" id="resume-button">继续开打 <span>→</span></button>
-            <div class="overlay-actions"><button id="restart-button">重新开局</button><button id="lobby-button">返回街角</button></div>
+            <div class="overlay-actions"><button id="restart-button">重新开局</button><button id="lobby-button">返回选角</button></div>
           </div>
         </div>
 
@@ -92,7 +96,7 @@
         <div class="rotate-hint" id="rotate-hint" hidden aria-hidden="true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg><span>横屏开打，视野更宽</span></div>
       </div>
 
-      <div class="arcade-bottom">
+      <div class="arcade-bottom" id="match-info" hidden>
         <span class="match-label"><i></i><span id="mode-description">人机对战 · 三局两胜 · 每局 90 秒</span></span>
         <span id="record-label" class="record-label">本地战绩 0 胜 / 0 负</span>
         <div class="practice-tools" id="practice-tools" hidden><button id="dummy-button">木桩：站立</button><button id="practice-reset">重置练习</button></div>
@@ -101,7 +105,7 @@
 
       <div class="touch-controls" id="touch-controls" aria-label="触屏操作" hidden>
         <div class="joystick-wrap"><button data-action="guard" class="touch-guard" aria-label="防御，长按">挡<small>长按</small></button><div id="joystick" class="joystick" role="group" aria-label="移动摇杆。左右拖动移动，推满奔跑，连续拨动冲刺，上推跳跃，下拉蹲下。"><span class="joystick-guide" aria-hidden="true"></span><span class="joystick-knob" aria-hidden="true"></span></div><small>推满跑 · 上推跳</small></div>
-        <div class="touch-actions"><button data-action="jab" aria-label="拳。上加拳升龙，下加拳抱摔">拳<small>↑升 ↓摔</small></button><button data-action="kick" aria-label="踢腿。下加脚扫腿">脚<small>↓扫腿</small></button><button data-action="special" aria-label="技能">技<small>配方向</small></button><button data-action="super" class="touch-super" aria-label="必杀">必杀<small>100</small></button><button data-action="blink" class="touch-blink" aria-label="闪移脱身">闪<small data-blink-label>2/2</small></button></div>
+        <div class="touch-actions"><button data-action="jab" aria-label="拳。上加拳升龙，下加拳抱摔">拳<small>↑升 ↓摔</small></button><button data-action="kick" aria-label="踢腿。下加脚扫腿">脚<small>↓扫腿</small></button><button data-action="special" aria-label="技能">技<small>配方向</small></button><button data-action="super" class="touch-super" aria-label="必杀">必杀<small>100</small></button><button data-action="blink" class="touch-blink" aria-label="闪移脱身">闪<small data-blink-label></small><span class="blink-charge-track" aria-hidden="true"><i data-blink-charge></i><i data-blink-charge></i></span></button></div>
       </div>
 
       <div class="fullscreen-tip" id="fullscreen-tip" hidden role="status">
@@ -111,24 +115,26 @@
     </section>
 
     <section class="roster-section" id="roster-section" aria-labelledby="roster-heading">
-      <div class="section-heading"><div><span class="eyebrow">PICK YOUR FROG</span><h2 id="roster-heading">今天，你是哪只蛙？</h2></div><div class="player-selector" role="group" aria-label="选择为哪位玩家更换角色"><button class="active" data-player="0" aria-pressed="true">P1 选手</button><button data-player="1" aria-pressed="false" id="p2-select-label">CPU 对手</button></div></div>
+      <div class="section-heading"><div><span class="eyebrow">03 / PICK YOUR FROG</span><h2 id="roster-heading">今天，你是哪只蛙？</h2></div><div class="player-selector" role="group" aria-label="选择为哪位玩家更换角色"><button class="active" data-player="0" aria-pressed="true">P1 选手</button><button data-player="1" aria-pressed="false" id="p2-select-label">人机对手</button></div></div>
       <div class="roster-grid" id="roster"></div>
       <p class="roster-hint" id="roster-hint">点选喜欢的口味，开打之后就别后悔。<span>同一只蛙，也可以互相切磋。</span></p>
-      <div class="fighter-notes" id="fighter-notes" aria-live="polite"></div>
+      <details class="setup-disclosure"><summary>看看双方的流派与招式 <span aria-hidden="true">＋</span></summary><div class="fighter-notes" id="fighter-notes" aria-live="polite"></div></details>
     </section>
 
+    <details class="setup-disclosure setup-guide" id="setup-guide" open><summary>操作速查 <span>拳脚、闪移和组合技 <b aria-hidden="true">＋</b></span></summary>
     <section class="quick-guide" aria-label="操作速查">
       <div class="guide-title"><span class="handwritten">喂，先看这个 ↗</span><h2>出招不难，<br>手感要练。</h2><button id="guide-help" class="underlined-button">翻翻完整招式本 →</button></div>
-      <div class="guide-column"><span class="guide-number">01 / 走两步</span><div class="key-cluster"><kbd>A</kbd><kbd>D</kbd><span>双击冲刺</span><kbd>E</kbd><span>闪移</span></div><div class="key-cluster"><kbd>W</kbd><span>连跳 / 二段跳</span><kbd>S</kbd><span>下蹲</span></div><p>空中再按 W 二段跳，平台按住 S 跳下；空格防御。</p></div>
+      <div class="guide-column"><span class="guide-number">01 / 走两步</span><div class="key-cluster"><kbd>A</kbd><kbd>D</kbd><span>双击冲刺</span><kbd>E</kbd><span>闪移</span></div><div class="key-cluster"><kbd>W</kbd><span>连跳 / 二段跳</span><kbd>S</kbd><span>下蹲</span></div><p>空中再按 W 二段跳，平台按住 S 跳下；Q防御。</p></div>
       <div class="guide-column"><span class="guide-number">02 / 来两下</span><div class="key-cluster"><kbd>J</kbd><span>拳</span><kbd>K</kbd><span>脚</span><kbd>W + J</kbd><span>升龙</span></div><div class="key-cluster"><kbd>S + J</kbd><span>抱摔</span><kbd>L</kbd><span>技能</span></div><p>J J J 连击；J K / K J 分支追击，下 + K 扫腿。</p></div>
-      <div class="guide-column"><span class="guide-number">03 / 别客气</span><div class="key-cluster"><kbd>I</kbd><span>配方向，切换组合必杀</span></div><div class="mini-meter"><span></span><span></span><span></span><span></span><b>MAX!</b></div><p>前 / 下 / 后 + I 各有奥义；后 + L 战术技能。</p></div>
+      <div class="guide-column"><span class="guide-number">03 / 别客气</span><div class="key-cluster"><kbd>I</kbd><span>配方向，切换组合必杀</span></div><div class="mini-meter"><span></span><span></span><span></span><span></span><b>MAX!</b></div><p>前 / 下 / 后 + I 各有奥义；跳跃 + I 空中奥义。</p></div>
     </section>
-    <footer class="site-footer"><span>奶蛙街头 <small>小拳头，大脾气。</small></span><button id="credits-button">制作与素材 ↗</button></footer>
+    </details>
+    <footer class="site-footer" id="site-footer"><span>奶蛙街头 <small>小拳头，大脾气。</small></span><button id="credits-button">制作与素材 ↗</button></footer>
   </main>
 
   <dialog id="help-dialog" class="paper-dialog" aria-labelledby="help-heading">
     <button class="dialog-close" data-close aria-label="关闭操作手册">×</button><span class="eyebrow">THE LITTLE BOOK OF BIG PUNCHES</span><h2 id="help-heading">街角招式本</h2><p class="dialog-intro">三局两胜。把对手的血条打空，或者在时间结束时保留更多体力。</p>
-    <div class="help-players"><div><h3><span class="player-chip">P1</span> 一号选手</h3><dl><div><dt>移动 / 跳跃 / 下蹲</dt><dd><kbd>A</kbd><kbd>D</kbd> / <kbd>W</kbd> / <kbd>S</kbd></dd></div><div><dt>直拳 / 踢腿</dt><dd><kbd>J</kbd> / <kbd>K</kbd></dd></div><div><dt>技能 / 必杀</dt><dd><kbd>L</kbd> / <kbd>I</kbd></dd></div><div><dt>防御</dt><dd><kbd>SPACE</kbd> 或后退</dd></div></dl></div><div><h3><span class="player-chip p2">P2</span> 二号选手</h3><dl><div><dt>移动 / 跳跃 / 下蹲</dt><dd><kbd>←</kbd><kbd>→</kbd> / <kbd>↑</kbd> / <kbd>↓</kbd></dd></div><div><dt>直拳 / 踢腿</dt><dd><kbd>1</kbd> / <kbd>2</kbd></dd></div><div><dt>技能 / 必杀</dt><dd><kbd>3</kbd> / <kbd>4</kbd></dd></div><div><dt>防御</dt><dd><kbd>右 SHIFT</kbd> 或后退</dd></div></dl></div></div>
+    <div class="help-players"><div><h3><span class="player-chip">P1</span> 一号选手</h3><dl><div><dt>移动 / 跳跃 / 下蹲</dt><dd><kbd>A</kbd><kbd>D</kbd> / <kbd>W</kbd> / <kbd>S</kbd></dd></div><div><dt>直拳 / 踢腿</dt><dd><kbd>J</kbd> / <kbd>K</kbd></dd></div><div><dt>技能 / 必杀</dt><dd><kbd>L</kbd> / <kbd>I</kbd></dd></div><div><dt>防御</dt><dd><kbd>Q</kbd> 或后退</dd></div></dl></div><div><h3><span class="player-chip p2">P2</span> 二号选手</h3><dl><div><dt>移动 / 跳跃 / 下蹲</dt><dd><kbd>←</kbd><kbd>→</kbd> / <kbd>↑</kbd> / <kbd>↓</kbd></dd></div><div><dt>直拳 / 踢腿</dt><dd><kbd>1</kbd> / <kbd>2</kbd></dd></div><div><dt>技能 / 必杀</dt><dd><kbd>3</kbd> / <kbd>4</kbd></dd></div><div><dt>防御</dt><dd><kbd>ENTER</kbd> 或后退</dd></div></dl></div></div>
     <p class="help-note">P1：W + J 升龙、S + J 抱摔、E 闪移；P2：↑ + 1 升龙、↓ + 1 抱摔、8（或 /）闪移。双击方向冲刺，继续按住奔跑，P1 也可左 Shift 加速。按住 W / ↑ 落地后连续跳，空中松开再按可以二段跳；平台按住 S / ↓ 可穿过下落。H 大笑（P2 按 5 或 B）。手柄 A/B/X/Y 出招，肩键防御，上 / 下 + 拳为升龙 / 抱摔，按下左摇杆闪移。</p>
     <p class="help-note">手机：右手只保留拳、脚、技、必杀、闪、挡六键，摇杆上 + 拳升龙、下 + 拳抱摔。摇杆推满奔跑，同向连拨冲刺；持续上推会落地连跳，松开再上推可二段跳，平台下拉可跳下。右手“闪”可存两次、每 3 秒恢复一次，可穿过对手，也能在短暂受击后脱身。方向与攻击可同时按，前 / 下 / 后 + 必杀选择突进 / 升空 / 空袭奥义。前后相对角色朝向；P2 的 1/2/3/4 对应 J/K/L/I，上 / 下 + 拳与 P1 相同。</p>
     <h3>连招与组合大招</h3><ul class="command-list" id="command-list"></ul>
@@ -147,10 +153,15 @@
     <p class="help-note">设置和人机战绩只保存在当前浏览器。</p>
   </dialog>
 
-  <dialog id="share-dialog" class="paper-dialog small-dialog" aria-labelledby="share-heading">
+  <dialog id="share-dialog" class="paper-dialog share-dialog" aria-labelledby="share-heading">
     <button class="dialog-close" data-close aria-label="关闭分享">×</button><span class="eyebrow">MEET AT THE ARCADE</span><h2 id="share-heading">约朋友来一局。</h2>
-    <p>复制链接，发给朋友就能开玩。</p><label class="share-link-label" for="share-link">游戏链接</label><input id="share-link" class="share-link" type="url" readonly spellcheck="false">
-    <button id="copy-share-link" class="primary-button">复制链接 <span>↗</span></button><p id="share-status" class="help-note" role="status" aria-live="polite"></p>
+    <div class="share-content">
+      <div class="share-preview"><img id="share-card-image" class="share-card-image" alt="奶蛙街头约战图片，内含扫码开玩的二维码" hidden><span id="share-card-loading">正在准备二维码图片…</span></div>
+      <div class="share-details"><p>发链接，或发一张约战图。朋友扫码就能开玩。</p><label class="share-link-label" for="share-link">游戏链接</label><input id="share-link" class="share-link" type="url" readonly spellcheck="false">
+        <div class="share-actions"><button id="native-share-link">系统分享链接 ↗</button><button id="copy-share-link">复制链接</button><button id="native-share-image" disabled>分享二维码图片 ↗</button><a id="save-share-image" class="share-save" download="奶蛙街头-约战.png" aria-disabled="true">保存二维码图片 ↓</a></div>
+        <p class="help-note">也可以长按图片保存，再发给朋友。</p><p id="share-status" class="help-note" role="status" aria-live="polite"></p>
+      </div>
+    </div>
   </dialog>
 
   <dialog id="credits-dialog" class="paper-dialog small-dialog" aria-labelledby="credits-heading">
@@ -159,6 +170,23 @@
   </dialog>
 
   <noscript><div class="noscript-note">开启 JavaScript 后就能和奶蛙一起开打。</div></noscript>
-  <script type="module" src="./src/app.js"></script>
+  <script>
+    // This runs even while the game module is still downloading.
+    (() => {
+      const hint=document.getElementById('loading-hint'),retry=document.getElementById('retry-load');
+      const slow=()=>{hint.hidden=false;hint.textContent='资源仍在下载，网络较慢，请稍候或重试。';retry.hidden=false;};
+      const timer=setTimeout(slow,10000);
+      retry.addEventListener('click',()=>{const url=new URL(location.href);url.searchParams.set('retry',Date.now());location.replace(url.href);});
+      window.addEventListener('milkfrog:ready',()=>{clearTimeout(timer);retry.hidden=true;},{once:true});
+      window.addEventListener('milkfrog:load-error',()=>{clearTimeout(timer);slow();hint.textContent='游戏资源未能加载，请检查网络后重试。';});
+      window.addEventListener('error',event=>{if(event.target?.id==='game-entry'){clearTimeout(timer);slow();}},true);
+    })();
+  </script>
+  <script id="game-entry" type="module" data-src="./src/app.js">
+    const url=new URL(document.getElementById('game-entry').dataset.src,location.href);
+    const retry=new URL(location.href).searchParams.get('retry');
+    if(retry)url.searchParams.set('retry',retry);
+    import(url.href).catch(error=>{console.error('游戏未能启动',error);window.dispatchEvent(new Event('milkfrog:load-error'));});
+  </script>
 </body>
 </html>

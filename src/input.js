@@ -15,11 +15,12 @@ export class Input {
     window.addEventListener('keydown', event => {
       if (event.target.closest('input, select, textarea, dialog')) return;
       if (['Escape', 'KeyP', 'Enter'].includes(event.code) && !event.repeat) {
-        if (this.onShortcut(event.code)) event.preventDefault();
+        if (this.onShortcut(event.code)) {event.preventDefault();return;}
       }
       if (!this.enabled) return;
       if (KEYMAPS.some(map => map[event.code])) {
         event.preventDefault();
+        if(event.repeat)return;
         if (!this.keys.has(event.code)) this.edges.add(event.code);
         this.keys.add(event.code);
       }

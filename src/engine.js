@@ -1,8 +1,9 @@
-import { WORLD, MOVEMENT, PLATFORMS, MOVES, DIFFICULTIES, characterById, stageById, isSuperMove, isSkillMove } from './config.js';
+import { WORLD, MOVEMENT, COMBAT, PLATFORMS, MOVES, DIFFICULTIES, characterById, stageById, isSuperMove, isSkillMove } from './config.js';
 import {createCamera,updateCamera} from './camera.js';
 import {moveFor} from './styles.js';
 import {think} from './ai.js';
-import {spawnAbility,advanceAbility,volleyCount} from './abilities.js';
+import {spawnAbility,advanceAbility,volleyCount,fieldBounds} from './abilities.js';
+import {hitReaction} from './reactions.js';
 
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const neutral=()=>({held:new Set(),pressed:new Set()});
@@ -25,9 +26,10 @@ export class Fighter {
       dashTime:0,dashCooldown:0,dashDirection:0,runDirection:0,jumpBuffer:0,jumpDodge:0,jumpReadyAt:0,upAttackHold:false,hitstunTime:0,
       confirmedMoves:[],lastMove:null,lastMoveTime:0,afterimages:[],
       platformId:null,airJumps:1,jumpSince:0,jumpRepeatDelay:0,dropThrough:0,dropHold:0,
-      blinkTime:0,blinkCooldown:0,reaction:null,downTime:0,getUpTime:0,grappled:false,throwing:false,throwRotation:0,
+      blinkTime:0,blinkCooldown:0,reaction:null,downTime:0,getUpTime:0,getUpDuration:.32,grappled:false,throwing:false,throwRotation:0,
       blinkCharges:MOVEMENT.blinkCharges,blinkRecharge:0,blinkBuffer:0,
       frost:0,charm:0,slowSource:null,healIds:[],juggleCount:0,
+      controlTime:0,controlType:null,controlId:0,controlImmune:0,controlDuration:0,controlColor:null,walkPhase:0,runPhase:0,
       frostStacks:0,frostWindow:0,petals:0,petalWindow:0,armorUsed:false,counterTime:0,
       aiPlan:[],aiLastConfirm:0,aiConfirmWatch:null,aiBlinkWatch:null,aiBlinkNext:0,aiRestUntil:0,aiWasAttacking:false,aiIntent:'approach',aiStats:{confirms:0,punishes:0,defenses:0,blinks:0},
     });
@@ -104,12 +106,12 @@ export class Game {
     for(const f of this.fighters)this.resolveAttack(f,this.fighters[1-f.index]);
     this.updateProjectiles(dt);
     if(this.mode==='practice'){
-      for(const f of this.fighters){f.energy=100;if(f.hp<=0||(f.stun<=0&&f.comboTimer<=0&&f.downTime<=0&&f.getUpTime<=0&&!f.grappled))f.hp=WORLD.maxHealth;}
+      for(const f of this.fighters){f.energy=100;if(f.hp<=0||(f.stun<=0&&f.controlTime<=0&&f.comboTimer<=0&&f.downTime<=0&&f.getUpTime<=0&&!f.grappled))f.hp=WORLD.maxHealth;}
     }else if(a.hp<=0||b.hp<=0||this.roundTime<=0)this.endRound();
   }
   intake(f,input){
     const pressed=new Set(input.pressed);
-    for(const d of ['left','right','down','jump'])if(input.held.has(d)&&!f.inputHeld.has(d))pressed.add(d);
+    for(const d of ['left','right','down','jump',...ATTACK_INPUTS])if(input.held.has(d)&&!f.inputHeld.has(d))pressed.add(d);
     for(const d of ['down','left','right'])if(pressed.has(d)){
       const relative=d==='down'?'down':(d==='right'?1:-1)===f.facing?'forward':'back';
       f.history.push({direction:relative,time:this.time});
@@ -121,32 +123,45 @@ export class Game {
     f.history=f.history.filter(e=>this.time-e.time<.6).slice(-12);f.inputHeld=new Set(input.held);
     if(!input.held.has('jump'))f.upAttackHold=false;
     if(pressed.has('jump')){f.jumpBuffer=.2;f.jumpReadyAt=this.time+(f.grounded ? .08 : 0);if(f.grounded)f.jumpDodge=.12;}
-    if(input.command&&moveFor(f.character,input.command)){f.buffer={move:input.command,raw:input.command,ttl:.20};return;}
+    if(input.command&&moveFor(f.character,input.command)){f.buffer={move:input.command,raw:input.command,ttl:.28,command:true};return;}
     for(const raw of ATTACK_INPUTS)if(pressed.has(raw)){
-      const move=this.chooseMove(f,raw,input.held,pressed);
-      if(move==='uppercut'&&raw==='jab'&&input.held.has('jump')){f.jumpBuffer=0;f.upAttackHold=true;}
-      if(move==='grab')f.dropHold=0;
-      f.buffer={move,raw,ttl:.20};break;
+      this.queueAttack(f,raw,input.held,pressed);break;
     }
   }
-  chooseMove(f,raw,held,pressed=new Set()){
+  queueAttack(f,raw,held,pressed){
+    const move=this.chooseMove(f,raw,held,pressed,false);
+    if(move==='powerWave'||move==='uppercut'&&raw==='jab'&&!held.has('jump'))f.history=[];
+    if(move==='uppercut'&&raw==='jab'&&held.has('jump')){f.jumpBuffer=0;f.upAttackHold=true;}
+    if(move==='grab')f.dropHold=0;
+    const defensive=f.stun>0||f.controlTime>0||f.downTime>0||f.getUpTime>0||f.grappled;
+    f.buffer={move,raw,held:new Set(held),pressed:new Set(pressed),ttl:COMBAT.inputBuffer,defensive,expires:this.time+COMBAT.defensiveBufferMaxAge};return true;
+  }
+  bufferedMove(f){
+    const buffer=f.buffer;if(!buffer)return null;
+    // A second punch pressed before the first hit is confirmed must still
+    // become jab2 once the actual hit opens the cancel window.
+    if(!buffer.command&&['jab','kick'].includes(buffer.raw)&&['jab','kick','jab2','straight','branch','link','ender','airJab','diveKick'].includes(buffer.move))return this.chooseMove(f,buffer.raw,buffer.held,buffer.pressed);
+    return buffer.move;
+  }
+  chooseMove(f,raw,held,pressed=new Set(),consumeMotion=true){
     const forward=held.has(f.facing===1?'right':'left'),backward=held.has(f.facing===1?'left':'right');
     const down=held.has('down')&&f.grounded;
     if(raw==='super'){
       if(down||held.has('uppercut'))return 'superRise';
       if(backward||held.has('special'))return 'superStorm';
       if(forward||held.has('kick'))return 'superRush';
+      if(!f.grounded||held.has('jump'))return 'airSuper';
       if(f.combo>=3&&f.cancelTime>0)return 'superFinish';
       return 'super';
     }
-    if(raw==='grab'||((pressed.has('jab')||pressed.has('kick'))&&held.has('jab')&&held.has('kick')))return 'grab';
+    if(raw==='grab'||pressed.has('jab')&&pressed.has('kick'))return 'grab';
     if(raw==='uppercut')return 'uppercut';
     if(raw==='spin'||raw==='special'&&held.has('kick'))return 'spin';
     const forwardIndex=f.history.findLastIndex(e=>e.direction==='forward');
     const quarterCircle=forwardIndex>=0&&f.history.slice(0,forwardIndex).some(e=>e.direction==='down'&&f.history[forwardIndex].time-e.time<.5)&&this.time-f.history[forwardIndex].time<.3;
     if(raw==='special'){
       if(!f.grounded)return 'airWave';
-      if(quarterCircle){f.history=[];return 'powerWave';}
+      if(quarterCircle){if(consumeMotion)f.history=[];return 'powerWave';}
       if(down)return 'pulse';
       if(forward)return 'rushSkill';
       if(backward)return 'stance';
@@ -157,7 +172,7 @@ export class Game {
       if(down)return 'grab';
       if(!f.grounded)return 'airJab';
       if(backward)return 'lowJab';
-      if(quarterCircle){f.history=[];return 'uppercut';}
+      if(quarterCircle){if(consumeMotion)f.history=[];return 'uppercut';}
       if(f.attack?.move==='jab'&&f.hasHit)return 'jab2';
       if(f.attack?.move==='jab2'&&f.hasHit)return 'straight';
       if(f.attack?.move==='kick'&&f.hasHit)return 'link';
@@ -175,19 +190,29 @@ export class Game {
   }
   updateFighter(f,input,dt){
     const {held,pressed}=input;f.stateTime+=dt;
-    for(const timer of ['flash','invincible','slow','stun','cancelTime','comboTimer','dashTime','dashCooldown','jumpBuffer','jumpDodge','lastMoveTime','blinkTime','blinkBuffer','jumpRepeatDelay','dropThrough','downTime','getUpTime','frost','charm','frostWindow','petalWindow','counterTime'])f[timer]=Math.max(0,f[timer]-dt);
+    const wasHurt=f.stun>0&&f.stunKind==='hurt',wasDown=f.downTime>0;
+    const wasControlled=f.controlTime>0;
+    f.controlTime=Math.max(0,f.controlTime-dt);f.controlImmune=Math.max(0,f.controlImmune-dt);
+    if(wasControlled&&f.controlTime===0)f.controlImmune=Math.max(f.controlImmune,.8);
+    for(const timer of ['flash','invincible','slow','stun','cancelTime','comboTimer','dashTime','dashCooldown','jumpBuffer','jumpDodge','lastMoveTime','blinkTime','blinkBuffer','jumpRepeatDelay','dropThrough','downTime','frost','charm','frostWindow','petalWindow','counterTime'])f[timer]=Math.max(0,f[timer]-dt);
+    if(!wasDown)f.getUpTime=Math.max(0,f.getUpTime-dt);
     if(f.frostWindow===0)f.frostStacks=0;if(f.petalWindow===0)f.petals=0;
     if(f.blinkCharges<MOVEMENT.blinkCharges){
       f.blinkRecharge-=dt;
       if(f.blinkRecharge<=0){f.blinkCharges++;f.blinkRecharge=f.blinkCharges<MOVEMENT.blinkCharges?f.blinkRecharge+MOVEMENT.blinkRecharge:0;}
     }
     f.blinkCooldown=f.blinkCharges>0?0:Math.max(0,f.blinkRecharge);
-    f.hitstunTime=f.stun>0&&f.stunKind==='hurt'?f.hitstunTime+dt:0;
+    f.hitstunTime=wasHurt?f.hitstunTime+dt:0;
+    if(wasHurt&&f.hitstunTime>=COMBAT.maxContinuousHitstun&&f.grounded&&f.controlTime<=0){f.stun=0;f.invincible=Math.max(f.invincible,COMBAT.recoveryProtection);}
     f.jumpSince+=dt;if(f.reaction)f.reaction.age+=dt;
     f.trailHp+=(f.hp-f.trailHp)*Math.min(1,dt*3.5);f.energy=clamp(f.energy+dt*3.5,0,100);
     if(f.comboTimer===0){f.combo=0;f.confirmedMoves=[];}
     f.blocking=false;
-    if(f.buffer&&(f.buffer.ttl-=dt)<=0)f.buffer=null;
+    const inputLocked=f.stun>0||f.controlTime>0||f.downTime>0||f.getUpTime>0||f.grappled;
+    if(f.buffer){
+      if(!f.buffer.defensive||!inputLocked)f.buffer.ttl-=dt;
+      if(f.buffer.ttl<=0||f.buffer.expires!==undefined&&this.time>f.buffer.expires)f.buffer=null;
+    }
     if(f.pendingDash&&(f.pendingDash.ttl-=dt)<=0)f.pendingDash=null;
     f.afterimages=f.afterimages.filter(image=>(image.life-=dt)>0);
     if(f.grappled||f.throwing)return;
@@ -201,6 +226,11 @@ export class Game {
     if(f.downTime>0||f.getUpTime>0){
       f.state=f.downTime>0?'knockdown':'getup';f.attack=null;f.blocking=false;f.crouching=false;this.physics(f,dt);return;
     }
+    if(f.controlTime>0){
+      if(f.controlType==='freeze')f.frost=Math.max(f.frost,.08);
+      f.state='hurt';f.attack=null;f.jumpBuffer=0;f.pendingDash=null;f.blocking=false;f.crouching=false;
+      f.vx*=Math.exp(-dt*18);this.physics(f,dt);return;
+    }
     if(f.stun>0){
       f.state=f.hp<=0?'ko':f.stunKind;f.attack=null;f.dashTime=0;f.runDirection=0;
       if(f.stunKind==='guard'){f.blocking=held.has('guard')||held.has(f.facing===1?'left':'right');f.crouching=held.has('down');}
@@ -208,9 +238,12 @@ export class Game {
       this.physics(f,dt);return;
     }
     if(f.reaction&&['trip','launch','tumble'].includes(f.reaction.type)&&!f.grounded){f.state='hurt';this.physics(f,dt);return;}
+    // A buffered press gets its first legal frame after hitstun, with enough
+    // protection to start a light retaliation instead of losing to a fresh jab.
+    if(wasHurt&&f.buffer&&f.grounded&&f.hp>0)f.invincible=Math.max(f.invincible,COMBAT.retaliationProtection);
     if(f.attack){
       if(!f.grounded&&f.jumpBuffer>0&&f.airJumps>0&&f.jumpSince>.12&&!isSuperMove(f.attack.move)&&f.attack.time>.09){f.attack=null;this.jump(f,true);}
-      else{this.updateAttack(f,dt);this.physics(f,dt);return;}
+      else{this.steerAir(f,held,dt);this.updateAttack(f,dt);this.physics(f,dt);return;}
     }
     if(f.reaction&&f.stun<=0&&f.grounded)f.reaction=null;
     if(f.pendingDash&&f.grounded&&f.dashCooldown<=0&&!held.has('guard')&&!held.has('down')){
@@ -234,10 +267,11 @@ export class Game {
       else if(!f.grounded&&f.jumpBuffer>0&&f.airJumps>0&&f.jumpSince>.12)this.jump(f,true);
     }
     if(f.buffer&&!held.has('guard')){
-      const move=f.buffer.move,aerial=!f.grounded&&f.jumpSince<.04;
+      const move=this.bufferedMove(f),aerial=!f.grounded&&f.jumpSince<.04;
       this.beginAttack(f,aerial&&['jab','kick','special'].includes(move)?{jab:'airJab',kick:'diveKick',special:'airWave'}[move]:move);
     }
     if(!f.attack){
+      const previousState=f.state;
       let direction=Number(held.has('right'))-Number(held.has('left'));
       if(f.crouching||held.has('guard'))direction=0;
       if(direction!==f.runDirection)f.runDirection=0;
@@ -250,6 +284,8 @@ export class Game {
         f.vx+=(direction*speed-f.vx)*Math.min(1,dt*(f.grounded?24:7));
         f.state=!f.grounded?'jump':f.crouching?'crouch':held.has('guard')?'guard':running?'dash':direction?'walk':'idle';
       }
+      if(f.state==='dash'&&previousState==='walk')f.runPhase=f.walkPhase;
+      if(f.state==='walk'&&previousState==='dash')f.walkPhase=f.runPhase;
     }
     this.physics(f,dt);
   }
@@ -274,12 +310,18 @@ export class Game {
       const opponent=this.fighters[1-f.index];f.vx=f.facing*(Math.abs(opponent.x-f.x)>WORLD.pushDistance+17*S?attack.config.drive:45);
       if(Math.floor(attack.time*60)%4===0)f.afterimages.push({x:f.x-f.facing*15,y:f.y,life:.15});
     }
-    const next=f.buffer?.move,aerialFollowup=attack.move==='uppercut'&&['airJab','diveKick','airWave'].includes(next);
+    const next=this.bufferedMove(f),aerialFollowup=attack.move==='uppercut'&&['airJab','diveKick','airWave'].includes(next);
     const canCancel=next&&f.hasHit&&f.cancelTime>0&&!isSuperMove(attack.move)&&attack.move!=='grab'&&(moveFor(f.character,next)?.rank>attack.config.rank||aerialFollowup);
     if(canCancel&&f.energy>=this.moveCost(f,next))this.beginAttack(f,next);
     else if(attack.time>=attack.config.startup+attack.config.active+attack.config.recovery){
       f.attack=null;f.state=f.grounded?'idle':'jump';f.stateTime=0;
     }
+  }
+  steerAir(f,held,dt){
+    if(f.grounded||isSuperMove(f.attack?.move)||f.attack?.config.drive||f.attack?.config.warp||f.grappled||f.throwing)return;
+    const direction=Number(held.has('right'))-Number(held.has('left'));
+    const speed=f.character.speed*(held.has('run')?1.35:1)*(f.slow>0?.58:1);
+    f.vx+=(direction*speed-f.vx)*Math.min(1,dt*7);
   }
   physics(f,dt){
     const previousY=f.y,previousX=f.x;
@@ -298,7 +340,10 @@ export class Game {
     if(f.y<WORLD.top+WORLD.standHeight){f.y=WORLD.top+WORLD.standHeight;f.vy=Math.max(0,f.vy);}
     const other=this.fighters[1-f.index];
     if(!f.grappled&&!f.throwing&&Math.abs(f.x-other.x)>WORLD.maxSeparation&&Math.abs(f.x-other.x)>Math.abs(previousX-other.x))f.x=previousX;
-    if(f.blinkTime<=0&&(f.stun>0||f.attack&&!f.attack.config.drive))f.vx*=Math.exp(-dt*8);
+    if(f.grounded&&!f.attack&&['walk','dash'].includes(f.state)){
+      const sprinting=f.state==='dash';f[sprinting?'runPhase':'walkPhase']+=(f.x-previousX)*f.facing/(sprinting?300:170);
+    }
+    if(f.blinkTime<=0&&(f.stun>0||f.grounded&&f.attack&&!f.attack.config.drive))f.vx*=Math.exp(-dt*8);
     if(f.afterimages.length>8)f.afterimages.splice(0,f.afterimages.length-8);
   }
   jump(f,second){
@@ -311,7 +356,7 @@ export class Game {
     f.y=y;f.vy=0;f.platformId=platformId;f.airJumps=1;f.jumpRepeatDelay=.065;f.juggleCount=0;
     this.effect('dust',f.x,y,'#f5e1ba',6);this.emit('land',{index:f.index});
     if(f.reaction&&['trip','launch','tumble'].includes(f.reaction.type)){
-      f.downTime=.3;f.getUpTime=.52;f.invincible=.65;f.stun=0;f.reaction={type:'slam',age:0};
+      f.downTime=.3;f.getUpTime=f.getUpDuration=.32;f.invincible=.72;f.stun=0;f.reaction={type:'slam',age:0};
       this.effect('shockwave',f.x,y,'#fff1b4',1,.3);this.emit('slam',{index:f.index});
     }
   }
@@ -323,6 +368,7 @@ export class Game {
     f.blinkCooldown=f.blinkCharges>0?0:f.blinkRecharge;f.blinkBuffer=0;
     f.blinkTime=MOVEMENT.blinkDuration;f.invincible=.24;f.vx=direction*MOVEMENT.blinkSpeed;
     f.stun=0;f.hitstunTime=0;f.attack=null;f.buffer=null;f.reaction=null;f.tauntTime=0;f.dashTime=0;f.runDirection=0;f.stateTime=0;f.aiStats.blinks++;
+    f.controlTime=0;f.controlImmune=.8;f.controlType=null;f.frost=0;
     opponent.combo=0;opponent.confirmedMoves=[];opponent.cancelTime=0;
     this.effect('airRing',f.x,f.y-90*S,f.character.accent,1,.3);this.emit('blink',{index:f.index});
   }
@@ -337,13 +383,14 @@ export class Game {
     const cost=this.moveCost(f,move);
     if(!config||f.energy+.001<cost){if(f.buffer)this.emit('noEnergy',{index:f.index});f.buffer=null;return false;}
     f.energy=clamp(f.energy-cost,0,100);
+    if(move==='airSuper'&&f.grounded)this.jump(f,false);
     f.attack={id:++this.attackSerial,move,config,cost,time:0,connected:false,pulses:new Set(),spawnedCount:0,aerial:!f.grounded};
     f.state=move;f.stateTime=0;f.buffer=null;f.hasHit=false;f.blocking=false;f.crouching=config.posture==='crouch';f.tauntTime=0;f.dashTime=0;f.runDirection=0;
-    f.vx=config.drive?f.facing*config.drive:f.vx*.2;
+    f.vx=config.drive?f.facing*config.drive:f.vx*(f.attack.aerial?.9:.2);
     f.armorUsed=false;f.counterTime=config.counter?config.active+config.startup:0;
     if(config.lift&&f.grounded){f.vy=-config.lift;f.platformId=null;f.jumpSince=0;f.jumpDodge=.1;}
     if(move==='diveKick'){f.vx=f.facing*340;f.vy=Math.max(200,f.vy);}
-    if(config.invincible)f.invincible=config.invincible;
+    if(config.invincible)f.invincible=Math.max(f.invincible,config.invincible);
     const name=config.name;
     f.lastMove={move,name};f.lastMoveTime=1.4;this.emit('attack',{move,index:f.index,character:f.character.id,name});
     if(isSuperMove(move)){this.shake=9;this.effect('super',f.x,f.y-100,config.colors[1],1,.9);this.emit('super',{index:f.index,name,theme:config.theme});}
@@ -411,7 +458,7 @@ export class Game {
       if(p>=1){
         d.grappled=false;d.throwRotation=0;d.x=grapple.targetX;d.y=grapple.targetY;d.platformId=grapple.platformId;d.vy=0;
         this.hit(a,d,{...grapple.attack.config,push:0,launch:0},'grab',null,grapple.attack.id);
-        d.reaction={type:'slam',age:0};d.downTime=.38;d.getUpTime=.64;d.invincible=.76;d.stun=0;d.vx=0;d.airJumps=1;
+        d.reaction={type:'slam',age:0};d.downTime=.38;d.getUpTime=d.getUpDuration=.36;d.invincible=.84;d.stun=0;d.vx=0;d.airJumps=1;
         a.throwing=false;a.state='idle';a.stun=.16;a.stunKind='idle';
         a.facing=a.x<=d.x?1:-1;d.facing=-a.facing;
         this.effect('shockwave',d.x,d.y,'#ffdc8e',1,.42);this.effect('dust',d.x,d.y,'#efdeb5',12);this.shake=8;
@@ -424,10 +471,7 @@ export class Game {
     if(spawnAbility(this,f,attack,sequence))return;
     const {move,config}=attack,superMove=isSuperMove(move),direction=f.facing,kind=f.character.special;
     const base={owner:f.index,character:f.character.id,attackId:attack.id,config,move,life:2.2,age:0,color:config.colors[1],colors:config.colors,theme:config.theme,super:superMove,slow:kind==='bubble',frost:kind==='frost',charm:kind==='charm',originY:f.y};
-    if(move==='superStorm'){
-      const opponent=this.fighters[1-f.index];
-      this.projectiles.push({...base,x:clamp(opponent.x+(sequence%2?18:-18)*S,WORLD.left,WORLD.right),y:opponent.y-485,vx:direction*35,vy:690,radius:31*S,kind:'meteor',visual:'meteor',level:'overhead',life:1.3});
-    }else if(move==='airWave'){
+    if(move==='airWave'){
       for(const slope of [.55,1])this.projectiles.push({...base,x:f.x+direction*55*S,y:f.y-90*S,vx:direction*530,vy:530*slope,radius:20*S,kind,visual:'orb',level:'overhead',life:1.5});
     }else{
       const ground=kind==='stomp'&&move!=='powerWave',dash=kind==='dash'&&move==='special',powered=move==='powerWave';
@@ -445,14 +489,18 @@ export class Game {
       if(p.life>0&&!p.hits?.has(defender.index)&&!this.evades(defender,p.level,p.originY)&&defender.hurtboxes.some(box=>circleHits(p,box))){
         this.hit(this.fighters[p.owner],defender,p.config,p.move,p,p.attackId);
         if(p.returning)p.hits.add(defender.index);else p.life=0;
+        p.hitGroup?.add(defender.index);
+        if(p.visual==='ribbonHunt'&&!p.returned)p.turnAt=Math.min(p.turnAt,p.age+.16);
       }
       if(p.x< -100||p.x>WORLD.arenaWidth+100||p.y>WORLD.floor+45)p.life=0;
     }
     for(let i=0;i<this.projectiles.length;i++)for(let j=i+1;j<this.projectiles.length;j++){
       const a=this.projectiles[i],b=this.projectiles[j];
+      if(a.emitter||b.emitter)continue;
       if(a.field||b.field){
         const wall=a.barrier?a:b.barrier?b:null,shot=wall===a?b:a;
-        if(wall&&wall.owner!==shot.owner&&!shot.field&&shot.life>0&&Math.abs(wall.x-shot.x)<wall.radius+shot.radius&&Math.abs(wall.y-shot.y)<130*S){
+        const bounds=wall?fieldBounds(wall):null;
+        if(wall&&wall.owner!==shot.owner&&!shot.field&&shot.life>0&&shot.x+shot.radius>bounds.left&&shot.x-shot.radius<bounds.right&&shot.y+shot.radius>bounds.top&&shot.y-shot.radius<bounds.bottom){
           shot.life=0;wall.barrierHp-=shot.super?3:1;if(wall.barrierHp<=0)wall.life=0;this.effect('iceShard',shot.x,shot.y,'#c8f5ff',8);this.emit('clash');
         }
         continue;
@@ -467,7 +515,8 @@ export class Game {
   hit(attacker,defender,config,move,projectile=null,attackId=0){
     if(defender.hp<=0||this.evades(defender,projectile?.level||config.level,projectile?.originY??attacker.y))return;
     const direction=projectile?Math.sign(projectile.vx)||attacker.facing:attacker.facing;
-    const front=projectile?Math.sign(projectile.x-defender.x)===defender.facing:Math.sign(attacker.x-defender.x)===defender.facing;
+    const sourceX=projectile&&!projectile.field?projectile.x:attacker.x;
+    const front=Math.abs(sourceX-defender.x)<1||Math.sign(sourceX-defender.x)===defender.facing;
     const level=projectile?.level||config.level;
     const guardHeight=level==='low'?defender.crouching:level==='overhead'?!defender.crouching:true;
     const blocked=level!=='throw'&&guardHeight&&defender.blocking&&front&&defender.grounded&&!defender.attack&&(defender.stun<=0||defender.stunKind==='guard');
@@ -486,25 +535,39 @@ export class Game {
     defender.hp=Math.max(0,defender.hp-damage*(blocked?.12:1));defender.vx=direction*config.push*(blocked?.38:1);
     const hitY=clamp(projectile?.y??attacker.y-((config.top||160*S)+(config.bottom||60*S))/2,defender.y-WORLD.standHeight+12*S,defender.y-10*S);
     if(blocked){
-      defender.stun=.1;defender.stunKind='guard';defender.state='guard';defender.energy=clamp(defender.energy+7,0,100);
+      defender.stun=.1;defender.stunKind='guard';defender.state='guard';defender.reaction={type:'guard',age:0,duration:.1,direction};defender.energy=clamp(defender.energy+7,0,100);
       this.effect('block',defender.x+defender.facing*34*S,hitY,'#b1e7e2',5);this.hitstop=.022;this.emit('block',{index:defender.index});return;
     }
     if(armored){defender.armorUsed=true;defender.flash=.12;this.effect('armor',defender.x,hitY,'#ffba64',1,.32);this.emit('armor',{index:defender.index});return;}
     if(defender.stun<=0||defender.stunKind!=='hurt')defender.hitstunTime=0;
-    defender.stun=config.stun;defender.stunKind='hurt';defender.state=defender.hp<=0?'ko':'hurt';defender.stateTime=0;defender.tauntTime=0;defender.attack=null;
+    const stunBudget=defender.grounded&&!config.launch?Math.max(.025,COMBAT.maxContinuousHitstun-defender.hitstunTime):config.stun;
+    defender.stun=Math.min(Math.max(defender.stun,config.stun),stunBudget);defender.stunKind='hurt';defender.state=defender.hp<=0?'ko':'hurt';defender.stateTime=0;defender.tauntTime=0;defender.attack=null;
     defender.dashTime=0;defender.runDirection=0;defender.flash=.1;defender.crouching=false;
-    let reaction=config.launch?'launch':['sweep','slide','pulse'].includes(move)?'trip':['kick','diveKick','straight','rushPunch','rushSkill'].includes(move)?'body':isSuperMove(move)?'tumble':'flinch';
-    if(projectile?.frost){reaction='freeze';defender.frost=.24;defender.slow=projectile.super?1.6:.8;defender.slowSource='frost';}
+    let {type:reaction,kind}=hitReaction(config,move,projectile);
+    if(projectile?.frost){defender.frost=.24;defender.slow=projectile.super?1.6:.8;defender.slowSource='frost';}
     if(projectile?.charm){reaction='charm';defender.charm=1.1;
       if(!attacker.healIds.includes(attackId)){attacker.hp=Math.min(WORLD.maxHealth,attacker.hp+(projectile.super?5:2)*H);attacker.healIds.push(attackId);attacker.healIds=attacker.healIds.slice(-12);this.effect('heart',attacker.x,attacker.y-125,'#efa3bd',4,.65);}
     }
-    defender.reaction={type:reaction,age:0,direction};
+    defender.reaction={type:reaction,kind,age:0,direction,duration:defender.stun};
+    if(config.control&&defender.controlImmune<=0&&defender.controlTime<=0&&defender.controlId!==attackId){
+      defender.controlTime=config.control;defender.controlDuration=config.control;defender.controlType=config.controlType||'bind';defender.controlId=attackId;defender.controlColor=config.colors[1];
+      defender.reaction={type:defender.controlType==='freeze'?'freeze':'bind',age:0,direction};
+      defender.jumpBuffer=0;defender.vx*=.15;
+      this.effect('sigil',defender.x,defender.y-65*S,config.colors[1],1,.45);
+    }
     if(projectile?.slow){defender.slow=projectile.super?2.1:1.2;defender.slowSource='bubble';}
     if(config.slow){defender.slow=config.slow;defender.slowSource='moon';}
     if(config.pull)defender.vx=-direction*config.pull;
     if(config.frost||projectile?.frost){
       defender.frostStacks++;defender.frostWindow=2;defender.frost=.24;defender.slow=.8;defender.slowSource='frost';
-      if(defender.frostStacks>=3){defender.frostStacks=0;defender.stun=Math.max(defender.stun,.48);defender.reaction={type:'freeze',age:0,direction};defender.frost=.55;this.effect('iceShard',defender.x,hitY,'#d3faff',14);}
+      if(defender.frostStacks>=3){
+        defender.frostStacks=0;defender.frost=.55;
+        if(defender.controlImmune<=0&&defender.controlTime<=0){
+          defender.stun=Math.max(defender.stun,.48);defender.reaction={type:'freeze',age:0,direction};
+          defender.controlTime=.68;defender.controlDuration=.68;defender.controlType='freeze';defender.controlId=attackId;
+        }
+        this.effect('iceShard',defender.x,hitY,'#d3faff',14);
+      }
     }
     if(config.mark||projectile?.charm){
       defender.petals++;defender.petalWindow=2.3;
@@ -513,13 +576,18 @@ export class Game {
     defender.energy=clamp(defender.energy+8,0,100);
     if(config.launch){defender.vy=-config.launch;defender.platformId=null;defender.jumpDodge=0;defender.juggleCount++;}
     else if(reaction==='trip'){defender.vy=-225;defender.platformId=null;}
-    if(defender.juggleCount>4){defender.invincible=.8;defender.reaction.type='tumble';}
+    if(defender.juggleCount>4){defender.invincible=.8;defender.reaction.type=defender.grounded?'body':'launch';}
+    if(defender.controlTime>0)defender.reaction.type=defender.controlType==='freeze'?'freeze':'bind';
+    if(defender.grounded&&!config.launch)defender.stun=Math.min(defender.stun,stunBudget);
+    defender.reaction.duration=defender.stun;
     attacker.combo++;attacker.comboTimer=config.stun+.23;attacker.maxCombo=Math.max(attacker.maxCombo,attacker.combo);attacker.landed++;
     this.matchStats[attacker.index].hits++;this.matchStats[attacker.index].maxCombo=Math.max(this.matchStats[attacker.index].maxCombo,attacker.combo);
     if(!attacker.confirmedMoves.some(c=>c.id===attackId))attacker.confirmedMoves.push({id:attackId,move,time:this.time,cost:isSkillMove(move)||move==='spin'?(config.cost||0):0});
-    attacker.confirmedMoves=attacker.confirmedMoves.slice(-8);attacker.hasHit=true;attacker.cancelTime=.38;attacker.energy=clamp(attacker.energy+(config.meter||0),0,100);
-    const superMove=isSuperMove(move);
-    this.hitstop=superMove?.065:['kick','sweep','uppercut','grab'].includes(move)?.06:.04;this.shake=superMove?10:config.damage>=12?6:3;
+    attacker.confirmedMoves=attacker.confirmedMoves.slice(-8);
+    if(attacker.attack?.id===attackId){attacker.hasHit=true;attacker.attack.connected=true;}
+    attacker.cancelTime=.38;attacker.energy=clamp(attacker.energy+(config.meter||0),0,100);
+    const superMove=isSuperMove(move)&&!config.dot;
+    this.hitstop=config.dot?0:superMove?.065:['kick','sweep','uppercut','grab'].includes(move)?.06:.04;this.shake=config.dot?0:superMove?10:config.damage>=12?6:3;
     this.effect(projectile?.frost?'iceShard':projectile?.charm?'heart':'spark',defender.x-direction*22,hitY,projectile?.frost?'#b7ecff':projectile?.charm?'#f3a8c0':superMove?'#ffce62':'#fff1b8',superMove?15:8);
     this.effect('ring',defender.x-direction*22,hitY,'#fff2d3',1,.28);
     this.effect('impact',defender.x-direction*22,hitY,config.colors?.[1]||attacker.character.accent,1,superMove?.27:.17);

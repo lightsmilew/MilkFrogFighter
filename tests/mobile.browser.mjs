@@ -1,3 +1,4 @@
+import {openSetup,launchMatch} from './ui-helpers.mjs';
 // iPhone feedback regression: fullscreen fallback, rotation, install hint and
 // gesture-bound Web Audio. Runs against a browser with no Fullscreen API, the
 // way iPhone Safari behaves. Set MOBILE_ENGINE=webkit to use Playwright WebKit.
@@ -51,7 +52,7 @@ try {
 
   const hasWebAudio = await page.evaluate(() => Boolean(window.AudioContext || window.webkitAudioContext));
   assert.equal(await page.evaluate(() => window.__audioBorn.length), 0, 'no AudioContext may be created before a gesture');
-  await page.locator('#start-button').tap();
+  await launchMatch(page);
   await page.waitForTimeout(700);
   if (!hasWebAudio) {
     // Playwright WebKit on Windows ships without Web Audio; the fallback must

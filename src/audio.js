@@ -1,4 +1,5 @@
-// Self-contained synthesis: no audio downloads, codec dependencies or network calls.
+import {assetUrl} from './asset-urls.js';
+// Synthesized combat audio; the classic laugh is fetched only after interaction.
 export class ArcadeAudio {
   constructor() {
     this.context = null;
@@ -123,7 +124,7 @@ export class ArcadeAudio {
 
   async loadLaugh() {
     try {
-      const response = await fetch(new URL('../assets/audio/classic-laugh.mp3', import.meta.url));
+      const response = await fetch(assetUrl('audio/classic-laugh.mp3'));
       if (!response.ok) throw new Error(`Laugh audio: ${response.status}`);
       this.laughBuffer = await this.context.decodeAudioData(await response.arrayBuffer());
       return true;

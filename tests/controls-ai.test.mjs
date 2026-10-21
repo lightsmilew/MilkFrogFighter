@@ -70,7 +70,7 @@ test('easy and normal end their planned pressure chains before hard does',()=>{
 });
 
 test('AI uses a real limited blink stock and waits for its three-second recharge',()=>{
-  const {game,a,b}=arena('hard');a.blinkCharges=0;a.blinkRecharge=3;a.stun=4;a.reaction={type:'flinch',age:.2};b.combo=3;
+  const {game,a,b}=arena('hard');a.blinkCharges=0;a.blinkRecharge=3;a.stun=4;a.reaction={type:'flinch',age:.2};b.combo=3;a.aiThink=10;
   for(let n=0;n<100;n++)game.tick(1/60,[game.ai(a,b,1/60),input()]);assert.equal(a.aiStats.blinks,0);assert.equal(a.blinkCharges,0);
   advance(game,1.5);assert.equal(a.blinkCharges,1);
 });

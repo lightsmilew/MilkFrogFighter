@@ -1,6 +1,7 @@
 // Standard viewport reference; the camera adapts to the actual container ratio.
 export const WORLD = Object.freeze({ width:1280,height:720,arenaWidth:3840,top:-1500,floor:610,left:64,right:3776,spawnX:1920,gravity:2050,fighterScale:.7,spriteSize:175,standHeight:145.6,crouchHeight:91,pushDistance:75.6,maxSeparation:1600,maxHealth:1000,damageScale:.44,roundSeconds:90 });
 export const MOVEMENT=Object.freeze({runMultiplier:2.15,dashForward:1180,dashBack:1020,dashDuration:.20,airJumpRatio:1,blinkSpeed:2300,blinkDuration:.16,blinkCharges:2,blinkRecharge:3});
+export const COMBAT=Object.freeze({maxContinuousHitstun:1.1,retaliationProtection:.12,recoveryProtection:.18,inputBuffer:.30,defensiveBufferMaxAge:2});
 
 export const PLATFORMS = Object.freeze([
   {id:'left-canopy',x:300,y:410,w:290,kind:'awning'},
@@ -60,9 +61,10 @@ const MOVE_DATA = {
 // Pose, hurtbox, reach, projectile and effect sizes use the same body scale.
 export const MOVES=Object.freeze(Object.fromEntries(Object.entries(MOVE_DATA).map(([name,move])=>[name,Object.freeze({...move,...Object.fromEntries(['reach','top','bottom','push'].filter(key=>key in move).map(key=>[key,move[key]*WORLD.fighterScale]))})])));
 
-export const isSuperMove = move => MOVES[move]?.rank === 5;
+export const isSuperMove = move => move==='airSuper'||MOVES[move]?.rank === 5;
 export const isSkillMove = move => move==='stance'||MOVES[move]?.rank === 4;
 export const COMMANDS = Object.freeze([
+  {keys:'J / K / L / I',name:'按一次出一招',detail:'长按不会连发；连招需再次按键。受击时可预输入，硬直结束后出招，方向可提前按住。'},
   {keys:'E / P2：8',name:'闪移脱身',detail:'可存两次，方向 + 闪移穿过对手；受击后也可脱身，每 3 秒恢复一次。'},
   {keys:'J → K / K → J',name:'流派分支追击',detail:'命中后拳接脚为分支，脚接拳为回身追击；J J K 接流派终结技。'},
   {keys:'后 + L',name:'战术技能',detail:'螺旋反击、风影分身、烈焰霸体、牵引结界、绯花结界、凝霜冰镜，消耗 20 奶气。'},
@@ -79,7 +81,8 @@ export const COMMANDS = Object.freeze([
   { keys:'I', name:'专属必杀', detail:'每只蛙独有的招牌必杀，消耗 100 奶气。' },
   { keys:'前 + I / K + I', name:'流派突进奥义', detail:'各流派独有的冲锋、多段、幻步或印记追击，消耗 100 奶气。' },
   { keys:'下 + I / U + I', name:'流派升空奥义', detail:'风轮、炎柱、月井、花雨、冰龙等独立效果，消耗 100 奶气。' },
-  { keys:'后 + I / L + I', name:'流派空袭奥义', detail:'分身、陨火、月珠、花瓣、冰雨等四波空袭，消耗 100 奶气。' },
+  { keys:'后 + I / L + I', name:'流派远程奥义', detail:'螺旋阵、风影阵、熔火追爆、幻月落阵、绯绫回环、冰镜折射；各有独立路径与破绽，消耗 100 奶气。' },
+  { keys:'跳跃 + I', name:'流派空中奥义', detail:'瞄准对手的空中压制与延迟爆发；上推摇杆 + 必杀同样有效，消耗 100 奶气。' },
 ]);
 
 export const DIFFICULTIES = Object.freeze({
@@ -89,8 +92,8 @@ export const DIFFICULTIES = Object.freeze({
 });
 
 export const KEYMAPS = Object.freeze([
-  { KeyA: 'left', KeyD: 'right', KeyW: 'jump', KeyS: 'down', KeyE:'blink', KeyJ: 'jab', KeyK: 'kick', KeyL: 'special', KeyI: 'super', KeyU: 'uppercut', KeyO: 'grab', KeyH: 'taunt', ShiftLeft:'run', Space: 'guard' },
-  { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'jump', ArrowDown: 'down', Digit1: 'jab', Digit2: 'kick', Digit3: 'special', Digit4: 'super', Digit5: 'taunt', Digit6:'uppercut',Digit7:'grab',Digit8:'blink',Numpad8:'blink',Slash:'blink', Numpad1: 'jab', Numpad2: 'kick', Numpad3: 'special', Numpad4: 'super', Numpad5: 'taunt',Numpad6:'uppercut',Numpad7:'grab', KeyN: 'jab', KeyM: 'kick', Comma: 'special', Period: 'super', KeyB: 'taunt', ShiftRight: 'guard' },
+  { KeyA: 'left', KeyD: 'right', KeyW: 'jump', KeyS: 'down', KeyE:'blink', KeyJ: 'jab', KeyK: 'kick', KeyL: 'special', KeyI: 'super', KeyU: 'uppercut', KeyO: 'grab', KeyH: 'taunt', ShiftLeft:'run', KeyQ: 'guard' },
+  { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'jump', ArrowDown: 'down', Digit1: 'jab', Digit2: 'kick', Digit3: 'special', Digit4: 'super', Digit5: 'taunt', Digit6:'uppercut',Digit7:'grab',Digit8:'blink',Numpad8:'blink',Slash:'blink', Numpad1: 'jab', Numpad2: 'kick', Numpad3: 'special', Numpad4: 'super', Numpad5: 'taunt',Numpad6:'uppercut',Numpad7:'grab', KeyN: 'jab', KeyM: 'kick', Comma: 'special', Period: 'super', KeyB: 'taunt', Enter: 'guard', NumpadEnter:'guard' },
 ]);
 
 export const characterById = id => CHARACTERS.find(character => character.id === id) || CHARACTERS[0];

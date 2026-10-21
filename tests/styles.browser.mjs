@@ -1,3 +1,4 @@
+import {openSetup,launchMatch} from './ui-helpers.mjs';
 import assert from 'node:assert/strict';
 import {mkdir,writeFile} from 'node:fs/promises';
 const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
@@ -28,13 +29,13 @@ try{
     }
     return {checks,png:sheet.toDataURL('image/png').split(',')[1]};
   });
-  assert.ok(result.checks.every(c=>c.frames===24));assert.deepEqual(errors,[]);
+  assert.ok(result.checks.every(c=>c.frames===48));assert.deepEqual(errors,[]);
   await writeFile('artifacts/six-styles.png',Buffer.from(result.png,'base64'));
   // Block both large maps: neither can hold the start button hostage.
   const fallback=await browser.newPage();
-  await fallback.route(/milk-(rain|rooftops)(-tall)?\.webp$/,route=>route.abort());
+  await fallback.route(/milk-(rain|rooftops)(-tall)?(?:\.[a-f0-9]{12})?\.webp$/,route=>route.abort());
   await fallback.goto(base,{waitUntil:'domcontentloaded'});await fallback.waitForFunction(()=>!document.getElementById('start-button').disabled);
-  await fallback.locator('#start-button').click();await fallback.waitForFunction(async()=>{const {game}=await import('./src/app.js');return game.phase==='fight';});
+  await launchMatch(fallback);await fallback.waitForFunction(async()=>{const {game}=await import('./src/app.js');return game.phase==='fight';});
   assert.equal(await fallback.locator('#home-overlay').isHidden(),true);await fallback.close();
   await writeFile('artifacts/styles-browser-report.json',JSON.stringify({passed:true,checks:result.checks,mapFailureCanStart:true,errors},null,2));
   console.log(JSON.stringify({passed:true,checks:result.checks,mapFailureCanStart:true,errors}));

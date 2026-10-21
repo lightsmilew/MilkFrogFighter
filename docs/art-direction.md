@@ -8,16 +8,16 @@
 
 | 用途 | 文件 |
 | --- | --- |
-| 游戏场景 WebP | `assets/milk-street.webp` |
-| 游戏动作 WebP | `assets/milkfrog-sprites.webp` |
-| 补充动作 WebP | `assets/milkfrog-advanced.webp` |
-| 扩展晴天街区 | `assets/milk-rooftops.webp` |
-| 扩展雨天街区 | `assets/milk-rain.webp` |
-| 场景原始 PNG | `assets/source/milk-street.png` |
-| 动作原始 PNG | `assets/source/milkfrog-sprites.png` |
-| 补充动作原始 PNG | `assets/source/milkfrog-advanced.png` |
-| 扩展晴天原始 PNG | `assets/source/milk-rooftops.png` |
-| 扩展雨天原始 PNG | `assets/source/milk-rain.png` |
+| 主页场景 WebP | `assets/milk-lobby.webp` |
+| 六位角色动作 WebP | `assets/fighters/*.webp` |
+| 扩展晴天街区 | `assets/milk-rooftops-tall.webp` |
+| 扩展雨天街区 | `assets/milk-rain-tall.webp` |
+| 场景原始 PNG | `art/source/milk-street.png` |
+| 动作原始 PNG | `art/source/milkfrog-sprites.png` |
+| 补充动作原始 PNG | `art/source/milkfrog-advanced.png` |
+| 六流派原始 PNG | `art/source/milkfrog-styles.png` |
+| 高晴天原始 PNG | `art/source/milk-rooftops-tall.png` |
+| 高雨天原始 PNG | `art/source/milk-rain-tall.png` |
 | 用户造型参考 | `docs/references/character-reference.jpg` |
 
 ## 场景提示词
@@ -46,7 +46,7 @@ Use case: precise-object-edit. Edit the provided transparent 4-column by 3-row m
 
 ## 补充动作提示词规格
 
-工具：内置 imagegen；参考图：`assets/source/milkfrog-sprites.png`。本轮生成要求整理如下，最终产物为 `assets/source/milkfrog-advanced.png`。
+工具：内置 imagegen；参考图：`art/source/milkfrog-sprites.png`。本轮生成要求整理如下，最终产物为 `art/source/milkfrog-advanced.png`。
 
 ```text
 Use case: identity-preserve. Supplementary transparent fighting-game sprite atlas.
@@ -68,4 +68,4 @@ sit lower than standing poses. No shadows, background, effects, labels or text.
 
 本轮以原经典参考和已有游戏图集生成 6 列 × 4 行的全新动作图。每位角色拥有不同的架势、轻击、重击和施法姿态；完整提示词、内置工具与输出路径见 [action-prompts.md](action-prompts.md)。
 
-旧图保留为原始归档，运行时改用 `assets/fighters/*.webp`。每位角色的旧二十姿态按新图肤色提取五档明暗进行校准，默认奶蛙的黄色同样校准。绿色眼睛、奶白肚皮与灰褐手脚不参与肤色映射；离线打包后新旧动作共用同一组图集与锚点。首页使用小型正式头像图，不用简化向量绘图代替未加载角色。
+基础动作 PNG 保留在 `art/source/` 供离线处理，旧独立 WebP 已删除，运行时使用 `assets/fighters/*.webp`。每位角色的旧二十姿态按新图肤色提取五档明暗进行校准，默认奶蛙的黄色同样校准。绿色眼睛、奶白肚皮与灰褐手脚不参与肤色映射；离线打包后新旧动作共用同一组图集与锚点。首页使用小型正式头像图，不用简化向量绘图代替未加载角色。

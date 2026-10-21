@@ -6,8 +6,9 @@ from pathlib import Path
 from PIL import Image
 
 assets=Path(__file__).resolve().parents[1]/'assets'
+source=assets.parent/'art/source'
 for name in ['milk-rooftops','milk-rain']:
-    image=Image.open(assets/'source'/f'{name}-tall.png').convert('RGB')
+    image=Image.open(source/f'{name}-tall.png').convert('RGB')
     image.save(assets/f'{name}-tall.webp','WEBP',quality=80,method=6)
     width,height=image.size
     preview=image.crop((0,int(height*.37),width,int(height*.81)))

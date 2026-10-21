@@ -1,3 +1,4 @@
+import {openSetup,launchMatch} from './ui-helpers.mjs';
 import assert from 'node:assert/strict';
 import {mkdir,writeFile} from 'node:fs/promises';
 const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
@@ -12,12 +13,12 @@ try{
   await page.locator('#sound-button').click();assert.equal(await page.locator('#sound-button svg').count(),1);await page.locator('#sound-button').click();
   await page.locator('.site-header').screenshot({path:'artifacts/header-controls.png'});
   await page.evaluate(()=>{Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{window.__shared=data;}});});
-  await page.locator('#share-button').click();assert.equal(await page.evaluate(()=>window.__shared.url),'https://lightsmilew.github.io/MilkFrogFighter/');
+  await page.locator('#share-button').click();assert.ok(await page.locator('#share-dialog').isVisible());await page.locator('#native-share-link').click();assert.equal(await page.evaluate(()=>window.__shared.url),'https://lightsmilew.github.io/MilkFrogFighter/');await page.locator('#share-dialog [data-close]').click();
   await page.evaluate(()=>{
     Object.defineProperty(navigator,'share',{configurable:true,value:undefined});
     Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>{window.__copied=value;}}});
   });
-  await page.locator('#share-button').click();assert.equal(await page.evaluate(()=>window.__copied),'https://lightsmilew.github.io/MilkFrogFighter/');
+  await page.locator('#share-button').click();await page.locator('#copy-share-link').click();assert.equal(await page.evaluate(()=>window.__copied),'https://lightsmilew.github.io/MilkFrogFighter/');await page.locator('#share-dialog [data-close]').click();
   await page.evaluate(()=>{Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw new Error('Denied');}}});});
   await page.locator('#share-button').click();assert.ok(await page.locator('#share-dialog').isVisible());
   assert.equal(await page.locator('#share-link').inputValue(),'https://lightsmilew.github.io/MilkFrogFighter/');await page.locator('#copy-share-link').click();
@@ -35,7 +36,7 @@ try{
     return {poses,png:canvas.toDataURL('image/png').split(',')[1]};
   });
   assert.deepEqual(poses.poses,[0,0,0,0,0,0]);await writeFile('artifacts/idle-and-roster-poses.png',Buffer.from(poses.png,'base64'));
-  await page.locator('[data-character="purple"]').click();await page.locator('[data-mode="practice"]').click();await page.locator('#start-button').click();
+  await openSetup(page);await page.locator('[data-character="purple"]').click();await openSetup(page);await page.locator('[data-mode="practice"]').click();await launchMatch(page);
   await page.waitForTimeout(500);await page.locator('#game-screen').screenshot({path:'artifacts/idle-fixed.png'});
   await page.close();
   const layouts=[];
@@ -45,7 +46,7 @@ try{
     const header=await mobile.locator('.header-tool').evaluateAll(buttons=>buttons.map(e=>{const r=e.getBoundingClientRect();return {width:r.width,height:r.height,inside:r.left>=0&&r.right<=innerWidth};}));
     assert.ok(header.every(e=>e.width>=44&&e.height>=40&&e.inside));
     await mobile.screenshot({path:`artifacts/header-${viewport.width}.png`});
-    await mobile.locator('[data-mode="practice"]').click();await mobile.locator('#start-button').click();await mobile.waitForTimeout(200);
+    await openSetup(mobile);await mobile.locator('[data-mode="practice"]').click();await launchMatch(mobile);await mobile.waitForTimeout(200);
     const layout=await mobile.locator('.touch-controls button').evaluateAll(buttons=>({
       count:buttons.length,inside:buttons.every(e=>{const r=e.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight&&r.width>=44&&r.height>=44;}),
       sizes:buttons.map(e=>{const r=e.getBoundingClientRect();return [r.width,r.height];}),overflow:document.documentElement.scrollWidth>innerWidth,

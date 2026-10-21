@@ -1,3 +1,4 @@
+import {openSetup,launchMatch} from './ui-helpers.mjs';
 import assert from 'node:assert/strict';
 import {mkdir,writeFile} from 'node:fs/promises';
 const playwright=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
@@ -48,7 +49,7 @@ try{
   await context.addInitScript(()=>{delete Element.prototype.requestFullscreen;delete Element.prototype.webkitRequestFullscreen;});
   const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base);await page.locator('#start-button:enabled').waitFor();
-  await page.locator('[data-mode="practice"]').click();await page.locator('#start-button').click();await page.waitForTimeout(200);
+  await openSetup(page);await page.locator('[data-mode="practice"]').click();await launchMatch(page);await page.waitForTimeout(200);
   const normal=await bounds(page);
   assert.equal(normal.buttons.length,6);
   assert.equal(normal.stickBackground,'rgba(0, 0, 0, 0)');assert.ok(normal.stickImage.includes('0.1')||normal.stickImage.includes('0.2'),'the joystick base must use translucent stops');
@@ -77,15 +78,15 @@ try{
   await page.locator('#fullscreen-button').tap();
   // Also reproduce a result in the small non-fullscreen arena.
   await page.evaluate(async()=>{const {game}=await import('./src/app.js');game.wins=[1,2];game.phase='matchOver';game.emit('matchEnd',{winner:1});});
-  await cardFits(page,'#result-overlay');await page.locator('#result-lobby-button').tap();assert.equal(await page.locator('#home-overlay').isVisible(),true);
+  await cardFits(page,'#result-overlay');await page.locator('#result-lobby-button').tap();assert.equal(await page.locator('#setup-panel').isVisible(),true);
   report.push({viewport,normal:normal.buttons,full:{arena:full.arena,camera:full.camera,edgeColors:full.edgeColors},hud,result});await context.close();
  }
  const desktop=await browser.newPage({viewport:{width:1440,height:1050}});desktop.on('pageerror',e=>errors.push(e.message));
- await desktop.goto(base);await desktop.locator('#start-button:enabled').waitFor();await desktop.locator('[data-mode="practice"]').click();await desktop.locator('#start-button').click();
+ await desktop.goto(base);await desktop.locator('#start-button:enabled').waitFor();await openSetup(desktop);await desktop.locator('[data-mode="practice"]').click();await launchMatch(desktop);
  await checkHud(desktop);await desktop.locator('#game-screen').screenshot({path:'artifacts/hud-desktop.png'});await desktop.close();
  const standalone=await browser.newContext({viewport:{width:844,height:390},isMobile:true,hasTouch:true});
  await standalone.addInitScript(()=>{Object.defineProperty(navigator,'standalone',{value:true});delete Element.prototype.requestFullscreen;});
- const app=await standalone.newPage();app.on('pageerror',e=>errors.push(e.message));await app.goto(base);await app.locator('#start-button:enabled').waitFor();await app.locator('#start-button').tap();
+ const app=await standalone.newPage();app.on('pageerror',e=>errors.push(e.message));await app.goto(base);await app.locator('#start-button:enabled').waitFor();await launchMatch(app);
  await app.locator('#arcade.is-expanded').waitFor();assert.equal(await app.locator('#fullscreen-tip').isVisible(),false);await app.locator('#pause-button').tap();await app.locator('#lobby-button').tap();
  assert.equal(await app.locator('#arcade.is-expanded').count(),0);await standalone.close();
  assert.deepEqual(errors,[]);await writeFile(`artifacts/viewport-report-${engine}.json`,JSON.stringify({passed:true,report,errors},null,2));console.log(JSON.stringify({passed:true,engine,viewports:viewports.length,errors}));

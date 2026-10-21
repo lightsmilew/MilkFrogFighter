@@ -9,6 +9,8 @@
     "start": "node scripts/serve.mjs",
     "build": "node scripts/build.mjs",
     "test": "node --test tests/*.test.mjs",
+    "test:spiral-wind": "node tests/spiral-wind.browser.mjs",
+    "test:lobby": "node tests/lobby.browser.mjs",
     "test:browser": "node tests/browser.smoke.mjs",
     "test:mobile": "node tests/mobile.browser.mjs",
     "test:viewport": "node tests/viewport.browser.mjs",
@@ -16,7 +18,18 @@
     "test:controls": "node tests/controls.browser.mjs",
     "test:ai": "node scripts/benchmark-ai.mjs",
     "test:styles": "node tests/styles.browser.mjs",
-    "test:startup": "node tests/startup.browser.mjs"
+    "test:startup": "node tests/startup.browser.mjs",
+    "test:delivery": "node tests/delivery.browser.mjs",
+    "test:tactics-share": "node tests/tactics-share.browser.mjs",
+    "test:held-input": "node tests/held-input.browser.mjs",
+    "test:reactions": "node tests/reactions.browser.mjs"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "jsqr": "1.4.0",
+    "qrcode-generator": "2.0.4"
+  }
 }

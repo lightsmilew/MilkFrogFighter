@@ -135,7 +135,7 @@ test('pink heals once per skill and blue produces a temporary freeze',()=>{
     const [a,b]=game.fighters;a.x=500;b.x=690;a.energy=100;a.hp=700;game.beginAttack(a,'special');advance(game,.48);
     assert.ok(b.hp<1000,p1);
     if(p1==='pink'){assert.equal(a.hp,720);assert.ok(b.charm>0);assert.equal(b.reaction.type,'charm');}
-    else{assert.ok(b.frost>0);assert.ok(b.slow>0);assert.equal(b.reaction.type,'freeze');}
+    else{assert.ok(b.frost>0);assert.ok(b.slow>0);assert.equal(b.reaction.type,'body');assert.equal(b.controlTime,0,'one frost hit slows; three freeze');}
     advance(game,2);assert.equal(b.frost,0);assert.equal(b.charm,0);
   }
 });
@@ -153,10 +153,10 @@ test('both maps initialize their own ledges and invalid map ids have a fallback'
   game.start({stage:'missing'});assert.equal(game.stageId,'street');assert.equal(game.roundTime,90);
 });
 
-test('rain of meteors targets the expanded world and upper platforms',()=>{
+test('spiral collapse follows expanded world and upper-platform target height',()=>{
   const {game,a,b}=arena();a.x=2400;b.x=2700;b.y=190;a.energy=100;
-  game.beginAttack(a,'superStorm');advance(game,.32);const meteor=game.projectiles[0];
-  assert.ok(meteor.x>2600&&meteor.x<2800);assert.ok(meteor.y<0);
+  game.beginAttack(a,'superStorm');advance(game,.32);const warning=game.projectiles.find(p=>p.visual==='spiralCollapse');
+  assert.ok(warning.x>2600&&warning.x<2800);assert.equal(warning.shape,'ellipse');assert.ok(warning.hitTop<b.y-WORLD.standHeight);assert.ok(warning.hitBottom>b.y-20);
 });
 
 test('seeded active duels no longer normally finish in ten seconds',()=>{

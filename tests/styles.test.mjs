@@ -12,10 +12,10 @@ function arena(id='classic'){
 }
 function advance(g,seconds){for(let i=0;i<Math.ceil(seconds*60);i++)g.tick(1/60,[none(),none()]);}
 
-test('six styles resolve 27 named moves with distinct normal, skill and combo data',()=>{
+test('six styles resolve 28 named moves with distinct normal, skill and combo data',()=>{
   for(const character of CHARACTERS){
-    assert.equal(Object.keys(MOVESETS[character.id]).length,27);
-    assert.equal(new Set(Object.values(MOVESETS[character.id]).map(m=>m.name)).size,27);
+    assert.equal(Object.keys(MOVESETS[character.id]).length,28);
+    assert.equal(new Set(Object.values(MOVESETS[character.id]).map(m=>m.name)).size,28);
     assert.ok(STYLES[character.id].recipe.length>10);
   }
   for(const slot of ['jab','kick','special','stance','super','superRush','superFinish']){

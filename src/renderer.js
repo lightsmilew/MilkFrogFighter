@@ -1,8 +1,11 @@
 import { WORLD, PLATFORMS, CHARACTERS, stageById, isSuperMove, isSkillMove } from './config.js';
-import {FRAME_DATA} from '../assets/fighters/frames.js';
+import {FRAME_DATA,ANIMATION_FRAMES,ATLAS_FRAME_SIZE} from '../assets/fighters/frames.js';
 import {styleOf} from './styles.js';
-import {attackMotion,stylePose,drawAttackVfx,drawTechnique,drawRichEffect} from './vfx.js';
+import {attackMotion,reactionMotion,stylePose,drawAttackVfx,drawTechnique,drawRichEffect,drawControlSeal} from './vfx.js';
 import {updateCamera} from './camera.js';
+import {assetUrl} from './asset-urls.js';
+import {drawStyleName,drawBlinkMeter} from './hud.js';
+import {reactionFrame} from './reactions.js';
 
 const FONT = '"Microsoft YaHei", "PingFang SC", sans-serif';
 const MONO = 'Consolas, monospace';
@@ -10,10 +13,10 @@ const INK = '#263d34';
 const S=WORLD.fighterScale;
 
 function hudMetrics(pixelScale){
-  const nameFont=Math.max(22,12/pixelScale),nameY=Math.max(39,nameFont+7);
-  const hpY=nameY+13,hpH=Math.max(28,16/pixelScale),milkY=hpY+hpH+2,milkH=Math.max(16,10/pixelScale);
-  const noteY=milkY+milkH+Math.max(19,11/pixelScale);
-  return {nameFont,nameY,hpY,hpH,milkY,milkH,noteY,comboY:Math.max(225,noteY+70)};
+  const nameFont=Math.max(22,11/pixelScale),nameY=Math.max(38,nameFont+6);
+  const hpY=nameY+Math.max(8,2.5/pixelScale),hpH=Math.max(23,10.5/pixelScale),milkY=hpY+hpH+1,milkH=Math.max(11,6/pixelScale);
+  const noteY=milkY+milkH+Math.max(4,2.5/pixelScale)+Math.max(7,5.5/pixelScale);
+  return {nameFont,nameY,hpY,hpH,milkY,milkH,noteY,comboY:Math.max(225,noteY+Math.max(70,39/pixelScale))};
 }
 
 function imageAsset(name,priority='auto') {
@@ -22,7 +25,7 @@ function imageAsset(name,priority='auto') {
     image.decoding='async';image.fetchPriority=priority;
     image.onload = () => resolve(image);
     image.onerror = () => reject(new Error(`无法加载素材：${name}`));
-    image.src = new URL(`../assets/${name}`, import.meta.url).href;
+    image.src = assetUrl(name);
   });
 }
 
@@ -85,21 +88,27 @@ export class Renderer {
   }
 
   async load() {
+    await Promise.allSettled(['classic','green'].map(id=>this.ensureFighter(id)));
+    // Decorative images must not share a slow connection with opening sprites.
+    setTimeout(()=>this.loadDecorations(),0);
+    return this.assetErrors;
+  }
+
+  loadDecorations(){
     imageAsset('fighters/portraits.webp','low').then(image=>{
       CHARACTERS.forEach((character,i)=>{const canvas=document.createElement('canvas');canvas.width=192;canvas.height=192;canvas.getContext('2d').drawImage(image,i*192,0,192,192,0,0,192,192);this.portraits.set(character.id,{...FRAME_DATA[character.id][20],canvas});});
       this.onAssetsUpdated?.();
     }).catch(error=>this.assetErrors.push(error.message));
     imageAsset('milk-lobby.webp','low').then(image=>{this.background=image;}).catch(error=>this.assetErrors.push(error.message));
-    await Promise.allSettled(['classic','green'].map(id=>this.ensureFighter(id)));
-    return this.assetErrors;
   }
 
   ensureFighter(id){
     if(this.packs.has(id))return this.packs.get(id);
     const promise=imageAsset(`fighters/${id}.webp`,'high').then(image=>{
-      const frames=FRAME_DATA[id].map((data,i)=>{
-        const canvas=document.createElement('canvas');canvas.width=256;canvas.height=256;
-        canvas.getContext('2d').drawImage(image,i%8*256,Math.floor(i/8)*256,256,256,0,0,256,256);
+      const frames=FRAME_DATA[id].map(data=>{
+        const canvas=document.createElement('canvas');canvas.width=ATLAS_FRAME_SIZE;canvas.height=ATLAS_FRAME_SIZE;
+        const {rect,bounds}=data;
+        canvas.getContext('2d').drawImage(image,rect.x,rect.y,rect.w,rect.h,bounds.left,bounds.top,rect.w,rect.h);
         return {...data,canvas};
       });
       this.variants.set(id,frames);
@@ -259,13 +268,11 @@ export class Renderer {
   }
 
   pose(fighter) {
-    if(fighter.state==='ko')return 10;
+    if(fighter.state==='ko'||fighter.controlTime>0)return reactionFrame(fighter);
     if(fighter.throwing)return 17;
-    if(fighter.grappled)return 3;
-    if(fighter.downTime>0||fighter.state==='knockdown')return 10;
-    if(fighter.getUpTime>0||fighter.state==='getup')return 7;
+    if(fighter.grappled||fighter.downTime>0||fighter.state==='knockdown'||fighter.getUpTime>0||fighter.state==='getup')return reactionFrame(fighter);
     if(fighter.state==='victory'||fighter.state==='taunt')return 11;
-    if(fighter.state==='hurt')return fighter.reaction?.type==='flinch'?4:fighter.reaction?.type==='trip'?10:fighter.reaction?.type==='freeze'?0:9;
+    if(fighter.state==='hurt')return reactionFrame(fighter);
     if(fighter.state==='guard'||fighter.blocking&&fighter.state==='idle')return 7;
     if(fighter.attack){
       const styledPose=stylePose(fighter);if(styledPose!==null)return styledPose;
@@ -283,15 +290,19 @@ export class Renderer {
       if(isSkillMove(move)||isSuperMove(move))return time<config.startup?4:8;
     }
     if(!fighter.grounded)return 3;
-    if(fighter.state==='dash'||fighter.state==='blink')return 19;
+    if(fighter.state==='blink')return ANIMATION_FRAMES.run[0];
     if(fighter.crouching)return 12;
-    if(fighter.state==='walk')return Math.floor(fighter.stateTime*9)%2?1:2;
+    if(fighter.state==='walk'||fighter.state==='dash'){
+      const cycle=ANIMATION_FRAMES[fighter.state==='dash'?'run':'walk'],phase=fighter.state==='dash'?fighter.runPhase:fighter.walkPhase;
+      return cycle[((Math.floor((phase||0)*cycle.length)%cycle.length)+cycle.length)%cycle.length];
+    }
     return 0;
   }
 
   drawFighter(ctx,fighter,time,{size=WORLD.spriteSize,pose=null}={}) {
     let frame=pose??this.pose(fighter);
-    if(frame>=12&&!this.advanced)frame=[7,5,6,3,6,8,6,1][frame-12];
+    const walking=pose===null&&fighter.grounded&&!fighter.attack&&!fighter.controlTime&&['walk','dash'].includes(fighter.state);
+    const sprinting=walking&&fighter.state==='dash',gaitPhase=sprinting?fighter.runPhase:fighter.walkPhase;
     const asset=this.variants.get(fighter.character.id)?.[frame]||this.portraits.get(fighter.character.id);
     if(!asset&&this.assetErrors.length===0)return;
     const drawSize=size*(asset?.scale||1);
@@ -311,19 +322,18 @@ export class Renderer {
     ctx.save();ctx.translate(fighter.x,fighter.y);
     ctx.scale(fighter.facing,1);
     this.drawAttackLight(ctx,fighter,time);
-    const idle=['idle','walk'].includes(fighter.state)&&!fighter.attack;
+    const idle=fighter.state==='idle'&&!fighter.attack;
     const laughing=['victory','taunt'].includes(fighter.state);
-    const bob=this.reducedMotion?0:idle?Math.sin(phase)*3:laughing?Math.sin(time*18)*5:0;
+    const bob=this.reducedMotion?0:walking?-Math.abs(Math.sin((gaitPhase||0)*Math.PI*2))*(sprinting?2.5:1.2):idle?Math.sin(phase)*3:laughing?Math.sin(time*18)*5:0;
     let sx=1,sy=1;
     if(idle&&!this.reducedMotion){sx+=Math.sin(phase)*.009;sy-=Math.sin(phase)*.008;}
     if(laughing&&!this.reducedMotion){sx+=Math.sin(time*18)*.025;sy-=Math.sin(time*18)*.015;}
     if(fighter.crouching){sy=asset?WORLD.crouchHeight/(asset.bounds.height/asset.canvas.height*drawSize):.44;sx=1.06;}
     const reaction=fighter.reaction;
-    if(fighter.grappled||fighter.state==='hurt'){
-      const age=reaction?.age||0,type=reaction?.type;
-      const rotation=fighter.grappled?fighter.throwRotation*fighter.facing:type==='trip'?-.4-age*2:type==='launch'?-Math.min(1.8,age*3):type==='tumble'?age*6:type==='body'?-.32: type==='freeze'?0:-.08;
-      ctx.translate(0,-92*S);ctx.rotate(rotation);ctx.translate(0,92*S);
-      if(type==='body')ctx.translate(-Math.sin(Math.min(1,age/.23)*Math.PI)*12,0);
+    if(fighter.grappled||fighter.state==='hurt'||fighter.state==='guard'&&reaction){
+      const type=reaction?.type,motion=reactionMotion(fighter);
+      ctx.translate(0,-92*S);ctx.rotate(motion.rotation);ctx.translate(motion.x,92*S+(motion.y||0));
+      sx*=motion.sx||1;sy*=motion.sy||1;
       if(type==='freeze')ctx.filter='brightness(1.12) saturate(.6)';
     }
     const motion=attackMotion(fighter);
@@ -338,8 +348,9 @@ export class Renderer {
       ctx.drawImage(asset.canvas,-drawSize*anchor.x,-drawSize*anchor.y,drawSize,drawSize);
     }else this.drawFallback(ctx,fighter,frame,size/350);
     ctx.restore();
+    drawControlSeal(ctx,fighter,time);
     if(fighter.petals>0||fighter.frostStacks>0){ctx.save();ctx.fillStyle=fighter.petals?'#ffb7d6':'#c8f3ff';for(let i=0;i<(fighter.petals||fighter.frostStacks);i++){ctx.beginPath();ctx.arc(fighter.x+(i-.5)*12,fighter.y-WORLD.standHeight-35,3.5,0,Math.PI*2);ctx.fill();}ctx.restore();}
-    if(fighter.frost>0){ctx.save();ctx.translate(fighter.x,fighter.y);ctx.scale(S,S);ctx.strokeStyle='#beeaff';ctx.fillStyle='#a8e6ff44';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-68,-8);ctx.lineTo(-58,-170);ctx.lineTo(0,-225);ctx.lineTo(65,-145);ctx.lineTo(67,-6);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();}
+    if(fighter.controlTime>0&&fighter.controlType==='freeze'){ctx.save();ctx.translate(fighter.x,fighter.y);ctx.scale(S,S);ctx.strokeStyle='#beeaff';ctx.fillStyle='#a8e6ff44';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-68,-8);ctx.lineTo(-58,-170);ctx.lineTo(0,-225);ctx.lineTo(65,-145);ctx.lineTo(67,-6);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();}
     if(fighter.charm>0){ctx.save();ctx.fillStyle='#ef93b1';ctx.font=`${21*S}px ${FONT}`;ctx.textAlign='center';for(let n=0;n<3;n++)ctx.fillText('♥',fighter.x+Math.cos(time*5+n*2)*58*S,fighter.y-220*S+Math.sin(time*5+n*2)*14*S);ctx.restore();}
   }
 
@@ -412,8 +423,9 @@ export class Renderer {
       const right=i===1,x=right?width-rightPad-468:leftPad,w=468;
       ctx.textAlign=right?'right':'left';ctx.font=`900 ${nameFont}px ${FONT}`;
       ctx.lineWidth=5;ctx.strokeStyle='#fff4d9';ctx.strokeText(fighter.character.name,right?x+w:x,nameY);ctx.fillStyle=INK;ctx.fillText(fighter.character.name,right?x+w:x,nameY);
-      if(!this.touchHud){ctx.font=`11px ${FONT}`;ctx.fillText(styleOf(fighter.character).name,right?x+w-80:x+80,nameY-1);}
-      ctx.fillStyle='#18352c';rounded(ctx,x-3,hpY-3,w+6,hpH+milkH+8,3);ctx.fill();ctx.fillStyle='#3f4032';ctx.fillRect(x,hpY,w,hpH);
+      const nameWidth=ctx.measureText(fighter.character.name).width,styleX=right?x+w-nameWidth-4/pixelScale:x+nameWidth+4/pixelScale;
+      drawStyleName(ctx,styleOf(fighter.character),styleX,nameY-nameFont*.35,pixelScale,right);
+      ctx.fillStyle='#18352c';rounded(ctx,x-2,hpY-2,w+4,hpH+milkH+5,2);ctx.fill();ctx.fillStyle='#3f4032';ctx.fillRect(x,hpY,w,hpH);
       const hpWidth=Math.max(0,w*fighter.hp/WORLD.maxHealth),trailWidth=Math.max(0,w*fighter.trailHp/WORLD.maxHealth);
       ctx.fillStyle='#b56948';ctx.fillRect(right?x+w-trailWidth:x,hpY,trailWidth,hpH);
       const hpGradient=ctx.createLinearGradient(0,hpY,0,hpY+hpH);hpGradient.addColorStop(0,fighter.hp>WORLD.maxHealth*.3?'#ffe6a0':'#f8ad80');hpGradient.addColorStop(1,fighter.hp>WORLD.maxHealth*.3?'#d5a24f':'#c95b42');ctx.fillStyle=hpGradient;
@@ -431,16 +443,15 @@ export class Renderer {
       const milkWidth=w*Math.max(0,Math.min(100,fighter.energy))/100;ctx.fillRect(right?x+w-milkWidth:x,milkY,milkWidth,milkH);
       ctx.strokeStyle='#def7e82e';for(let n=1;n<4;n++){ctx.beginPath();ctx.moveTo(x+w*n/4,milkY);ctx.lineTo(x+w*n/4,milkY+milkH);ctx.stroke();}
       for(const [y,h,value,max] of [[hpY,hpH,Math.ceil(Math.max(0,fighter.hp)),WORLD.maxHealth],[milkY,milkH,Math.floor(fighter.energy),100]]){
-        ctx.save();ctx.textBaseline='middle';ctx.textAlign='center';ctx.font=`900 ${Math.max(y===hpY?19:12,(y===hpY?11:8)/pixelScale)}px ${MONO}`;
+        ctx.save();ctx.textBaseline='middle';ctx.textAlign='center';ctx.font=`900 ${Math.max(y===hpY?19:11,(y===hpY?9:6.5)/pixelScale)}px ${MONO}`;
         ctx.strokeStyle='#17382e';ctx.lineWidth=2.5;ctx.fillStyle='#fff9e6';const text=`${value} / ${max}`;
         ctx.strokeText(text,x+w/2,y+h/2+1);ctx.fillText(text,x+w/2,y+h/2+1);
         ctx.restore();
       }
       ctx.textAlign=right?'right':'left';ctx.font=`700 ${Math.max(11,9/pixelScale)}px ${FONT}`;ctx.lineWidth=3;ctx.strokeStyle='#254235';ctx.fillStyle='#f5edcf';
-      const blinkText=`闪移 ${fighter.blinkCharges}/2`+(fighter.blinkCharges<2?` · +${fighter.blinkRecharge.toFixed(1)}s`:'');
-      ctx.strokeText(blinkText,right?x+w:x,noteY);ctx.fillText(blinkText,right?x+w:x,noteY);
-      if(full){ctx.textAlign=right?'left':'right';ctx.fillStyle='#dcf6ba';ctx.strokeText('必杀就绪',right?x:x+w,noteY);ctx.fillText('必杀就绪',right?x:x+w,noteY);}
-      if(fighter.lastMoveTime>0){ctx.textAlign=right?'right':'left';ctx.font=`900 16px ${FONT}`;ctx.lineWidth=4;ctx.strokeStyle='#fff4db';ctx.fillStyle=INK;const lx=right?x+w:x,ly=noteY+28;ctx.strokeText(fighter.lastMove.name,lx,ly);ctx.fillText(fighter.lastMove.name,lx,ly);}
+      drawBlinkMeter(ctx,fighter,x,milkY+milkH,w,pixelScale,right);
+      if(full&&pixelScale>=.5){ctx.textAlign=right?'left':'right';ctx.font=`800 11px ${FONT}`;ctx.fillStyle='#dcf6ba';const label='必杀就绪',lx=right?x:x+w;ctx.strokeText(label,lx,noteY);ctx.fillText(label,lx,noteY);}
+      if(fighter.lastMoveTime>0){ctx.textAlign=right?'right':'left';ctx.font=`900 ${Math.max(16,8/pixelScale)}px ${FONT}`;ctx.lineWidth=4;ctx.strokeStyle='#fff4db';ctx.fillStyle=INK;const lx=right?x+w:x,ly=noteY+Math.max(28,14/pixelScale);ctx.strokeText(fighter.lastMove.name,lx,ly);ctx.fillText(fighter.lastMove.name,lx,ly);}
       if(fighter.combo>=2&&fighter.comboTimer>0){
         const cx=right?1080+extra:200;
         ctx.textAlign='center';ctx.font=`italic 900 47px ${MONO}`;ctx.lineWidth=6;ctx.strokeStyle='#fff0d3';ctx.strokeText(`${fighter.combo} HIT`,cx,comboY);ctx.fillStyle='#b6492c';ctx.fillText(`${fighter.combo} HIT`,cx,comboY);

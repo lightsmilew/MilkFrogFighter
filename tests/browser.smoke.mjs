@@ -1,3 +1,4 @@
+import {openSetup,launchMatch} from './ui-helpers.mjs';
 // Optional browser QA: use PLAYWRIGHT_MODULE for a bundled Playwright module,
 // or install Playwright locally. Set BROWSER_EXECUTABLE to use an existing browser.
 import assert from 'node:assert/strict';
@@ -20,6 +21,13 @@ async function waitState(page,predicate,timeout=10000){
   while(Date.now()<deadline){const current=await state(page);if(predicate(current))return current;await page.waitForTimeout(60);}
   throw new Error(`State wait timed out: ${JSON.stringify(await state(page))}`);
 }
+const assertSprint=async page=>{
+  const result=await page.evaluate(async()=>{
+    const {game}=await import('./src/app.js'),{Renderer}=await import('./src/renderer.js'),{ANIMATION_FRAMES}=await import('./assets/fighters/frames.js');
+    const f=game.fighters[0];return {state:f.state,phase:f.runPhase,pose:Renderer.prototype.pose(f),cycle:ANIMATION_FRAMES.run};
+  });
+  assert.equal(result.state,'dash');assert.ok(result.phase!==0);assert.ok(result.cycle.includes(result.pose),JSON.stringify(result));
+};
 async function resetPractice(page){
   await page.locator('#practice-reset').click();
   await page.evaluate(async()=>{const {game}=await import('./src/app.js');const {WORLD}=await import('./src/config.js');game.fighters[0].x=500;game.fighters[1].x=500+WORLD.pushDistance+2;});
@@ -45,21 +53,21 @@ try{
   assert.equal(await page.locator('[data-stage]').count(),2);assert.ok(await page.locator('.quick-guide').isVisible());
   assert.equal(await page.locator('#laugh-button').count(),0);assert.equal(await page.locator('#game-screen #pause-button, #game-screen #fullscreen-button').count(),0);
   assert.ok(await page.locator('#fullscreen-button').evaluate(e=>e.closest('.arcade-top')!==null));
-  const fullBox=await page.locator('#fullscreen-button').boundingBox(),difficultyBox=await page.locator('.difficulty-label').boundingBox();assert.ok(fullBox.x+fullBox.width<=difficultyBox.x);
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   await page.screenshot({path:'artifacts/lobby-desktop.png',fullPage:true});
-  await page.locator('[data-stage="rain"]').click();assert.equal((await state(page)).stage,'rain');
+  await openSetup(page);await page.locator('[data-stage="rain"]').click();assert.equal((await state(page)).stage,'rain');
   await page.locator('#game-screen').screenshot({path:'artifacts/rain-lobby.png'});
   await page.locator('#laugh-preview').click();
   const audio=await page.evaluate(async()=>{
-    const response=await fetch(new URL('./assets/audio/classic-laugh.mp3',location.href));
+    const {assetUrl}=await import('./src/asset-urls.js');
+    const response=await fetch(assetUrl('audio/classic-laugh.mp3'));
     const context=new AudioContext();const clip=await context.decodeAudioData(await response.arrayBuffer());
     const result={duration:clip.duration,channels:clip.numberOfChannels,samples:clip.length};await context.close();return result;
   });
   assert.ok(audio.duration>2);report.push({check:'classic laugh decodes',...audio});
-  await page.locator('[data-player="1"]').click();await page.locator('[data-character="purple"]').click();
-  await page.locator('[data-player="0"]').click();await page.locator('[data-mode="practice"]').click();
-  await page.locator('#start-button').click();
+  await openSetup(page);await page.locator('[data-player="1"]').click();await openSetup(page);await page.locator('[data-character="purple"]').click();
+  await openSetup(page);await page.locator('[data-player="0"]').click();await openSetup(page);await page.locator('[data-mode="practice"]').click();
+  await launchMatch(page);
   assert.equal((await state(page)).phase,'fight');
   await page.keyboard.down('KeyD');await page.waitForTimeout(1550);await page.keyboard.up('KeyD');
   assert.ok((await state(page)).x[0]>700);
@@ -94,7 +102,7 @@ try{
   }
   await resetPractice(page);
   await page.keyboard.press('KeyD');await page.waitForTimeout(65);await page.keyboard.down('KeyD');
-  await waitState(page,s=>s.moves[0]==='dash'&&s.vx[0]>600);await page.keyboard.up('KeyD');
+  await waitState(page,s=>s.moves[0]==='dash'&&s.vx[0]>600);await assertSprint(page);await page.keyboard.up('KeyD');
   await resetPractice(page);
   await page.keyboard.press('KeyW');await page.waitForTimeout(360);
   assert.ok((await state(page)).y[0]<400);
@@ -108,8 +116,8 @@ try{
     const ctx=laugh.canvas.getContext('2d');
     let leftPixels=0;const pixels=ctx.getImageData(0,0,laugh.canvas.width,laugh.canvas.height);
     for(let y=0;y<pixels.height;y++)for(let x=0;x<laugh.bounds.left-2;x++)if(pixels.data[(y*pixels.width+x)*4+3]>48)leftPixels++;
-    const canvas=document.createElement('canvas');canvas.width=1440;canvas.height=720;
-    const draw=canvas.getContext('2d');draw.fillStyle='#ebe6d5';draw.fillRect(0,0,1440,720);
+    const canvas=document.createElement('canvas');canvas.width=1440;canvas.height=Math.ceil(frames.length/6)*180;
+    const draw=canvas.getContext('2d');draw.fillStyle='#ebe6d5';draw.fillRect(0,0,canvas.width,canvas.height);
     for(let i=0;i<frames.length;i++){
       const f=frames[i],x=i%6*240,y=Math.floor(i/6)*180;
       draw.drawImage(f.canvas,x+30,y+5,170,170);draw.fillStyle='#263d34';draw.font='13px monospace';draw.fillText(`FRAME ${i}`,x+10,y+19);
@@ -125,10 +133,10 @@ try{
     renderer.drawPlayerTag(badge,{index:0,x:65,y:WORLD.standHeight+45,crouching:false,downTime:0,slow:0,charm:0},{mode:'ai',camera:{scale:1}});
     return {count:frames.length,leftPixels,bounds:laugh.bounds,tags,badgeCornerAlpha:badge.getImageData(30,4,1,1).data[3],rainMoves:first!==second,preview:canvas.toDataURL('image/png').split(',')[1]};
   });
-  assert.equal(atlas.count,24);assert.equal(atlas.leftPixels,0);
+  assert.equal(atlas.count,48);assert.equal(atlas.leftPixels,0);
   assert.deepEqual(atlas.tags,['P2 · 电脑','P2 · 玩家','P2 · 木桩','P1 · 玩家']);assert.ok(atlas.rainMoves);assert.equal(atlas.badgeCornerAlpha,0);
   await writeFile('artifacts/isolated-frames.png',Buffer.from(atlas.preview,'base64'));
-  report.push({check:'24 prepacked animation frames per fighter; laugh has no detached foot',bounds:atlas.bounds});
+  report.push({check:'48 unique packed animation frames per fighter; laugh has no detached foot',bounds:atlas.bounds});
   await resetPractice(page);
   await page.keyboard.press('KeyO');await waitState(page,s=>s.grapples===1);await page.waitForTimeout(230);
   await page.locator('#game-screen').screenshot({path:'artifacts/throw-arc.png'});
@@ -159,7 +167,7 @@ try{
   report.push({check:'native fullscreen and absent/rejected-API immersive fallback'});
   await page.keyboard.press('Escape');await page.locator('#lobby-button').click();
 
-  await page.locator('[data-mode="local"]').click();await page.locator('#start-button').click();
+  await openSetup(page);await page.locator('[data-mode="local"]').click();await launchMatch(page);
   await waitState(page,snapshot=>snapshot.phase==='fight');
   await page.keyboard.down('KeyD');await page.keyboard.down('ArrowLeft');await page.waitForTimeout(1100);await page.keyboard.up('KeyD');await page.keyboard.up('ArrowLeft');
   await page.keyboard.press('Digit1');
@@ -181,11 +189,11 @@ try{
 
   const mobileContext=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:1});
   const mobile=await mobileContext.newPage();observe(mobile);await mobile.goto(base);await mobile.locator('#start-button:enabled').waitFor();
-  assert.ok(await mobile.locator('#touch-controls').isVisible());
+  assert.ok(await mobile.locator('#touch-controls').isHidden());
   assert.ok(await mobile.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   await mobile.screenshot({path:'artifacts/lobby-mobile.png',fullPage:true});
-  await mobile.locator('[data-stage="rain"]').tap();
-  await mobile.locator('[data-mode="practice"]').click();await mobile.locator('#start-button').click();
+  await openSetup(mobile);await mobile.locator('[data-stage="rain"]').tap();
+  await openSetup(mobile);await mobile.locator('[data-mode="practice"]').click();await launchMatch(mobile);
   const stick=await mobile.locator('#joystick').boundingBox();
   const center={x:stick.x+stick.width/2,y:stick.y+stick.height/2};
   await mobile.mouse.move(center.x,center.y);await mobile.mouse.down();await mobile.mouse.move(center.x+stick.width*.36,center.y);await mobile.waitForTimeout(750);await mobile.mouse.up();
@@ -202,6 +210,7 @@ try{
   finger1.x+=stick.width*.35;
   await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[finger1]});
   await mobile.waitForTimeout(100);
+  await assertSprint(mobile);
   const finger2={id:2,x:jab.x+jab.width/2,y:jab.y+jab.height/2,radiusX:5,radiusY:5};
   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[finger1,finger2]});
   await mobile.waitForTimeout(90);assert.equal((await state(mobile)).moves[0],'jab');
