@@ -260,3 +260,19 @@ body:not(.in-match) .page-shell{padding-top:26px}
  .home-copy{top:9%}.home-kicker{font-size:7px;margin-bottom:7px;letter-spacing:1px}.home-copy h2{font-size:25px;line-height:1.12}.home-copy p{font-size:8px;margin:8px 0 10px}.home-copy .primary-button{min-height:40px;height:40px;font-size:11px;padding:7px 13px}.home-copy .enter-hint{font-size:7px;margin-top:8px}
 }
 @media(max-width:370px){.home-copy p{display:none}.home-copy .primary-button{margin-top:9px}.setup-launch #setup-summary-detail{max-width:130px;overflow:hidden;text-overflow:ellipsis}}
+
+/* Keep the same fullscreen control reachable throughout home, setup and play. */
+body:not(.in-match) .arcade .arcade-top{position:absolute;inset:0 0 auto;height:0;min-height:0;padding:0;background:none;z-index:26;pointer-events:none}
+body:not(.in-match) .arcade .match-summary{display:none}
+body:not(.in-match) .arcade .arcade-toolbar{position:absolute;inset:0;display:block;width:auto;height:0;margin:0;pointer-events:none}
+body:not(.in-match) .arcade .toolbar-controls{position:absolute;left:auto;right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));transform:none;pointer-events:none}
+body:not(.in-match) .arcade .toolbar-controls .screen-button{width:44px;height:44px;background:#f5f0dedb;border:1px solid #87917b;color:var(--ink);pointer-events:auto;box-shadow:0 2px 5px #263d3412}
+body:not(.in-match) .arcade .toolbar-controls .screen-button:hover{background:#fff8e5}
+body:not(.in-match) .setup-heading{padding-right:50px}
+body[data-screen=setup] .arcade.is-expanded .stage-picker{display:block}
+body[data-screen=setup] .arcade.is-expanded .mode-tabs{display:grid}
+@media(max-width:620px){
+ body:not(.in-match) .arcade .toolbar-controls{right:max(3px,env(safe-area-inset-right));top:max(0px,env(safe-area-inset-top))}
+ body:not(.in-match) .setup-heading{height:44px;min-height:44px;padding-right:45px}
+ body:not(.in-match) .setup-back{min-height:44px}
+}

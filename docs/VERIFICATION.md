@@ -49,9 +49,9 @@
 
 `npm run build` 生成独立 `dist/`，只含运行必需文件。已将成品挂载在 `/MilkFrogFighter/` 子路径运行同一浏览器检查，全部通过，未发现页面异常或资源错误；模块、图像、经典原声和页面操作不依赖网站根目录。
 
-静态部署包为 `releases/milkfrog-pages.zip`，2576470 字节，包含 48 个文件（其中 `src/*.js` 小型转发模块仅供既有浏览器诊断使用，普通开局不会请求它们）。已检查 ZIP 完整性、根目录的 `index.html` 和 `.nojekyll`；无 PNG 制作原图、文档、测试或构建依赖。
+静态部署包为 `releases/milkfrog-pages.zip`，2576646 字节，包含 48 个文件（其中 `src/*.js` 小型转发模块仅供既有浏览器诊断使用，普通开局不会请求它们）。已检查 ZIP 完整性、根目录的 `index.html` 和 `.nojekyll`；无 PNG 制作原图、文档、测试或构建依赖。
 
-ZIP SHA-256：`e2f3b3b4129e2c54dc7b12ed8ddc67964a6991659880094c24a5573bf58eedf2`。
+ZIP SHA-256：`49c0f5c754125f4aa60958278de2ec568946b07a0eee92c71fc6dec392355fa7`。
 
 当前目录已配置 GitHub 远端；本轮修改未推送，远程发布未执行。Pages 工作流已随源文件提供。
 
@@ -149,3 +149,10 @@ Chromium 与 Playwright WebKit 的 `test:held-input` 通过 J / K / L / I 长按
 
 
 本轮生产构建完成，`test:lobby` 的四视口检查与 `test:delivery` 的子路径、缓存复用、新部署代码更新、受限存储开打、下载失败重试均通过。限速首开 4373 ms、779353 字节、最长任务 115 ms；一个游戏模块，完整地图、原声和二维码继续按需下载。ZIP 已按本轮 dist 重新生成和完整性校验，大小与哈希见“打包与路径”。
+
+
+## 主页全屏入口与退出暂停
+
+`test:fullscreen` 在生产构建的 Chromium / Playwright WebKit 各通过 1440×1000、320×568、390×844、844×390 四种视口。检查首页、选择界面和全屏后的按钮位于画面右上角，44×44 点击区域可触达，与返回按钮不重叠；全屏中能切换地图和玩法并直接开打。Chromium 桌面实际使用原生 Fullscreen API，其余视口模拟 API 缺失使用沉浸回退；检查控件退出、外部原生退出 / Esc、已暂停时进入再退出均保持暂停，220 ms 实际模拟时间不推进。主动返回设置不残留暂停框，返回主页仍有全屏入口。报告与截图为 `fullscreen-flow-{engine}.json` 和 `fullscreen-*-{engine}-{width}.png`；没有进行 iPhone / 夸克真机测试。
+
+新版退出规则下完整 Chromium smoke 与四视口选择流程通过，131 项规则检查通过，生产构建完成，部署 ZIP 已更新并校验完整性。

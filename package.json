@@ -10,6 +10,7 @@
     "build": "node scripts/build.mjs",
     "test": "node --test tests/*.test.mjs",
     "test:spiral-wind": "node tests/spiral-wind.browser.mjs",
+    "test:fullscreen": "node tests/fullscreen-flow.browser.mjs",
     "test:lobby": "node tests/lobby.browser.mjs",
     "test:browser": "node tests/browser.smoke.mjs",
     "test:mobile": "node tests/mobile.browser.mjs",

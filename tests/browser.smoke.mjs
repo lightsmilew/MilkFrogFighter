@@ -165,7 +165,7 @@ try{
   }
   await page.evaluate(()=>{delete document.getElementById('arcade').requestFullscreen;delete document.getElementById('arcade').webkitRequestFullscreen;});
   report.push({check:'native fullscreen and absent/rejected-API immersive fallback'});
-  await page.keyboard.press('Escape');await page.locator('#lobby-button').click();
+  await page.locator('#pause-overlay').waitFor({state:'visible'});await page.locator('#lobby-button').click();
 
   await openSetup(page);await page.locator('[data-mode="local"]').click();await launchMatch(page);
   await waitState(page,snapshot=>snapshot.phase==='fight');
@@ -279,6 +279,7 @@ try{
   await mobile.evaluate(()=>{document.getElementById('arcade').requestFullscreen=undefined;document.getElementById('arcade').webkitRequestFullscreen=undefined;});
   await mobile.locator('#fullscreen-button').tap();assert.ok(await mobile.locator('#arcade.is-immersive').isVisible());
   await mobile.screenshot({path:'artifacts/mobile-immersive.png'});await assertPauseFits(mobile,'immersive-844');await mobile.locator('#fullscreen-button').tap();
+  await mobile.locator('#pause-overlay').waitFor({state:'visible'});await mobile.locator('#resume-button').click();
   await mobile.setViewportSize({width:320,height:568});await assertPauseFits(mobile,'portrait-320');
   assert.ok(await mobile.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   report.push({check:'top toolbar, transparent tags, two touch flashes and bounded mobile pause at 320/390/844 plus immersive'});

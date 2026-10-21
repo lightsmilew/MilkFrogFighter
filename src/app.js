@@ -31,10 +31,12 @@ audio.armGestureUnlock();
 export { audio };
 const renderer = new Renderer($('game'));
 export const fullscreen=new FullscreenController($('arcade'),active=>{
+  const wasExpanded=$('arcade').classList.contains('is-expanded');
   $('arcade').classList.toggle('is-expanded',active);
   setScreenIcon($('fullscreen-button'),active?'collapse':'expand',active?'退出全屏':'切换全屏');
   $('fullscreen-button').setAttribute('aria-pressed',String(active));
   updateRotateHint();
+  if(wasExpanded&&!active&&state.active&&!state.paused)setPaused(true);
 },{onUnavailable:showFullscreenTip});
 let toastTimer = null;
 let lastEnergyNotice = -1000;
@@ -89,7 +91,7 @@ export const game = new Game({ onEvent(event) {
 } });
 
 const input = new Input(code => {
-  if(code==='Escape'&&fullscreen.pseudo){fullscreen.exit();return true;}
+  if(code==='Escape'&&fullscreen.active){fullscreen.exit();return true;}
   if(code==='Escape'||code==='KeyP') {
     if(state.active){setPaused(!state.paused);return true;}
     if(code==='Escape'&&state.screen==='setup'){home();return true;}
@@ -149,7 +151,7 @@ function showScreen(screen){
   $('setup-panel').hidden=screen!=='setup';
   for(const id of ['roster-section','setup-guide','site-footer'])$(id).hidden=screen==='match';
   $('arcade').hidden=false;$('home-overlay').hidden=screen!=='home';
-  $('match-toolbar').hidden=screen!=='match';$('match-info').hidden=screen!=='match';
+  $('match-toolbar').hidden=false;$('match-info').hidden=screen!=='match';
   $('touch-controls').hidden=screen!=='match'||!state.active||!settings.touch;
 }
 
@@ -183,8 +185,9 @@ function updateMode() {
 }
 
 function openSetup(){
-  if(fullscreen.active)fullscreen.exit();
+  const leavingMatch=state.screen==='match';
   state.launchId++;state.starting=false;state.active=false;state.paused=false;
+  if(leavingMatch&&fullscreen.active)fullscreen.exit();
   document.body.classList.remove('in-match','is-paused','match-ended');
   input.enabled=false;input.clear();game.toAttract();game.preview(state.p1,state.p2,state.stage);audio.setActive(false);
   $('pause-overlay').hidden=true;$('result-overlay').hidden=true;$('pause-button').hidden=true;
